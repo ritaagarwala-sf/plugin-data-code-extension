@@ -1,4 +1,13 @@
-# 0.1.0 (2026-03-25)
+## [0.1.1](https://github.com/salesforcecli/plugin-data-code-extension/compare/0.1.0...0.1.1) (2026-03-31)
+
+### Bug Fixes
+
+- failing unit tests after changes ([daa6cce](https://github.com/salesforcecli/plugin-data-code-extension/commit/daa6cceb13b47e2a66ebe3e0a8192aa3fb35b8bd))
+- squash some scan bugs ([18764a0](https://github.com/salesforcecli/plugin-data-code-extension/commit/18764a0751641149c3ad42434ce79d06b40c41a4))
+- squash some zip bugs ([ede053d](https://github.com/salesforcecli/plugin-data-code-extension/commit/ede053db469ceed0f3458a8a5cece055897346e8))
+- update README, remove examples ([4464cff](https://github.com/salesforcecli/plugin-data-code-extension/commit/4464cff6965bdc1f8cbd7faac0fa40070e944f95))
+
+# [0.1.0](https://github.com/salesforcecli/plugin-data-code-extension/compare/2c2a16146e21773f4ed530fb8cd49cb5007346b6...0.1.0) (2026-03-25)
 
 ### Bug Fixes
 
