@@ -24,13 +24,7 @@ export default class Zip extends ZipBase {
   public static readonly state = 'beta';
   public static readonly summary = messages.getMessage('summary', ['function']);
   public static readonly description = messages.getMessage('description');
-  public static readonly examples = messages.getMessages('examples', [
-    'function',
-    'function',
-    'function',
-    'function',
-    'function',
-  ]);
+  public static readonly examples = messages.getMessages('examples', ['function', 'function', 'function']);
 
   public static readonly flags = {
     'package-dir': Flags.directory({
