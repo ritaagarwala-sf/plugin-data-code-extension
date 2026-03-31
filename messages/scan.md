@@ -14,11 +14,7 @@ Scans Python files in an initialized Data Code Extension package directory to id
 
 - Scan with a custom entrypoint file:
 
-  <%= config.bin %> data-code-extension %s scan --entrypoint my_script.py
-
-- Scan with an alternate config file:
-
-  <%= config.bin %> data-code-extension %s scan --config-file alternate-config.json
+  <%= config.bin %> data-code-extension %s scan --entrypoint payload/entrypoint.py
 
 - Perform a dry run to see what would be changed:
 
@@ -109,7 +105,7 @@ Failed to scan package at '%s': %s
 - Verify the config file path is correct
 - Check if you're in the right directory
 - Run 'init' command first if package is not initialized
-- Use default config path: payload/config.json
+- Use default entrypoint path: payload/entrypoint.py
 
 # actions.notInPackageDir
 
@@ -140,11 +136,11 @@ Optional path to an alternate JSON config file to use instead of the package's d
 
 # flags.entrypoint.summary
 
-Path to the config.json file to update.
+Path to the entrypoint Python file to scan.
 
 # flags.entrypoint.description
 
-The path to the config.json file that will be analyzed and updated with discovered permissions. Defaults to 'payload/config.json' in the current directory.
+The path to the entrypoint Python file that will be analyzed. Defaults to 'payload/entrypoint.py' in the current directory.
 
 # flags.dryRun.summary
 

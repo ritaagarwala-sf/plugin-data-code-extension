@@ -30,7 +30,6 @@ export default class Scan extends ScanBase {
     'script',
     'script',
     'script',
-    'script',
   ]);
 
   public static readonly flags = {
