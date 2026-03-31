@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 import { spawn } from 'node:child_process';
+import { debuglog } from 'node:util';
+
+const debug = debuglog('datacustomcode');
 
 export type SpawnResult = { stdout: string; stderr: string };
 
@@ -35,6 +38,7 @@ export type SpawnOptions = {
  */
 export async function spawnAsync(command: string, args: string[], options?: SpawnOptions): Promise<SpawnResult> {
   return new Promise((resolve, reject) => {
+    debug('spawn: %s %o options: %o', command, args, options);
     const child = spawn(command, args, {
       timeout: options?.timeout,
       cwd: options?.cwd,
@@ -53,6 +57,7 @@ export async function spawnAsync(command: string, args: string[], options?: Spaw
     });
 
     child.on('close', (code) => {
+      debug('exit %d | stdout: %s | stderr: %s', code, stdout, stderr);
       if (code !== 0) {
         const err = new Error(`Process exited with code ${code ?? 'unknown'}`) as SpawnError;
         err.stdout = stdout;
@@ -65,6 +70,7 @@ export async function spawnAsync(command: string, args: string[], options?: Spaw
     });
 
     child.on('error', (err) => {
+      debug('spawn error: %o', err);
       const spawnErr = err as SpawnError;
       spawnErr.stdout = stdout;
       spawnErr.stderr = stderr;

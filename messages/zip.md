@@ -12,10 +12,6 @@ Creates a ZIP archive of an initialized Data Code Extension package for deployme
 
   <%= config.bin %> data-code-extension %s zip --package-dir ./my-%s-package
 
-- Create an archive with network configuration for Jupyter notebooks:
-
-  <%= config.bin %> data-code-extension %s zip --package-dir ./my-%s-package --network host
-
 # info.checkingPython
 
 Checking Python version...

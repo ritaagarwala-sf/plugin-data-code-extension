@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 import { spawn } from 'node:child_process';
+import { debuglog } from 'node:util';
 import { SfError } from '@salesforce/core';
+
+const debug = debuglog('datacustomcode');
 import { Messages } from '@salesforce/core';
 import { type PythonVersionInfo } from './pythonChecker.js';
 import { type PipPackageInfo } from './pipChecker.js';
@@ -148,7 +151,7 @@ export class DatacodeBinaryExecutor {
       args.push('--config', configFile);
     }
 
-    args.push(config ?? 'payload/config.json');
+    args.push(config ?? 'payload/entrypoint.py');
 
     try {
       const { stdout, stderr } = await spawnAsync('datacustomcode', args, {
@@ -313,6 +316,7 @@ export class DatacodeBinaryExecutor {
     }
 
     return new Promise((resolve, reject) => {
+      debug('deploy spawn: datacustomcode %o', args);
       const child = spawn('datacustomcode', args, {
         timeout: 300_000,
         env: { ...process.env, PYTHONUNBUFFERED: '1' },
@@ -324,16 +328,19 @@ export class DatacodeBinaryExecutor {
       child.stdout.on('data', (chunk: Buffer) => {
         const text = chunk.toString();
         stdout += text;
+        debug('deploy stdout chunk: %s', text);
         process.stdout.write(text);
       });
 
       child.stderr.on('data', (chunk: Buffer) => {
         const text = chunk.toString();
         stderr += text;
+        debug('deploy stderr chunk: %s', text);
         process.stderr.write(text);
       });
 
       child.on('close', (code) => {
+        debug('deploy exit code: %d', code);
         const stdoutTrimmed = stdout.trim();
         const stderrTrimmed = stderr.trim();
 
@@ -395,6 +402,7 @@ export class DatacodeBinaryExecutor {
       });
 
       child.on('error', (err) => {
+        debug('deploy spawn error: %o', err);
         const sfError = new SfError(
           messages.getMessage('error.deployExecutionFailed', [name, err.message]),
           'DeployExecutionFailed',
