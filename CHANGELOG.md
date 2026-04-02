@@ -1,3 +1,9 @@
+## [0.1.2](https://github.com/salesforcecli/plugin-data-code-extension/compare/0.1.1...0.1.2) (2026-04-02)
+
+### Bug Fixes
+
+- consistent help menu verbiage ([673b1e9](https://github.com/salesforcecli/plugin-data-code-extension/commit/673b1e98cb9ea5667804c5c1a2f73f5ef6e3f763))
+
 ## [0.1.1](https://github.com/salesforcecli/plugin-data-code-extension/compare/0.1.0...0.1.1) (2026-03-31)
 
 ### Bug Fixes
