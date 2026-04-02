@@ -6,23 +6,41 @@ Scan the Data Code Extension %s package for permissions and dependencies.
 
 Scans Python files in an initialized Data Code Extension package directory to identify required permissions and dependencies. Updates the config.json and requirements.txt files based on the code analysis.
 
-# examples
+# examples.script
 
-- Scan a %s package in the current directory:
+- Scan a script package in the current directory:
 
-  <%= config.bin %> data-code-extension %s scan
+  <%= config.bin %> data-code-extension script scan
 
 - Scan with a custom entrypoint file:
 
-  <%= config.bin %> data-code-extension %s scan --entrypoint payload/entrypoint.py
+  <%= config.bin %> data-code-extension script scan --entrypoint ./payload/entrypoint.py
 
 - Perform a dry run to see what would be changed:
 
-  <%= config.bin %> data-code-extension %s scan --dry-run
+  <%= config.bin %> data-code-extension script scan --dry-run
 
 - Scan without updating the requirements.txt file:
 
-  <%= config.bin %> data-code-extension %s scan --no-requirements
+  <%= config.bin %> data-code-extension script scan --no-requirements
+
+# examples.function
+
+- Scan a function package in the current directory:
+
+  <%= config.bin %> data-code-extension function scan
+
+- Scan with a custom entrypoint file:
+
+  <%= config.bin %> data-code-extension function scan --entrypoint ./payload/entrypoint.py
+
+- Perform a dry run to see what would be changed:
+
+  <%= config.bin %> data-code-extension function scan --dry-run
+
+- Scan without updating the requirements.txt file:
+
+  <%= config.bin %> data-code-extension function scan --no-requirements
 
 # info.checkingPython
 
