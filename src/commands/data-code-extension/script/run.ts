@@ -24,7 +24,7 @@ export default class Run extends RunBase {
   public static readonly state = 'beta';
   public static readonly summary = messages.getMessage('summary', ['script']);
   public static readonly description = messages.getMessage('description');
-  public static readonly examples = messages.getMessages('examples', ['script', 'script', 'script']);
+  public static readonly examples = messages.getMessages('examples.script');
 
   public static readonly flags = {
     entrypoint: Flags.file({
