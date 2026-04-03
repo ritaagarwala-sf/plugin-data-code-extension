@@ -4,37 +4,37 @@ Deploy a Data Code Extension %s package to a Salesforce org.
 
 # description
 
-Deploys an initialized and packaged Data Cloud code extension to a Salesforce org. The package must be initialized and zipped before deployment. Supports both script and function packages with configurable CPU resources and network settings.
+Deploys an initialized and packaged Data Cloud code extension to a Salesforce org. The package must be initialized and zipped before deployment. Supports both script and function packages with configurable CPU resources and network settings. Run this command from within the package directory (e.g. cd ./my-script-package).
 
 # examples
 
 - Deploy a %s package to the org with alias "myorg":
 
-  <%= config.bin %> data-code-extension %s deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./my-%s-package --target-org myorg
+  <%= config.bin %> data-code-extension %s deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./payload --target-org myorg
 
 - Deploy with a specific CPU size:
 
-  <%= config.bin %> data-code-extension %s deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./my-%s-package --target-org myorg --cpu-size CPU_4XL
+  <%= config.bin %> data-code-extension %s deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./payload --target-org myorg --cpu-size CPU_4XL
 
 # examples.script
 
 - Deploy a script package to the org with alias "myorg":
 
-  <%= config.bin %> data-code-extension script deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./my-script-package --target-org myorg
+  <%= config.bin %> data-code-extension script deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./payload --target-org myorg
 
 - Deploy with a specific CPU size:
 
-  <%= config.bin %> data-code-extension script deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./my-script-package --target-org myorg --cpu-size CPU_4XL
+  <%= config.bin %> data-code-extension script deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./payload --target-org myorg --cpu-size CPU_4XL
 
 # examples.function
 
 - Deploy a function package to the org with alias "myorg":
 
-  <%= config.bin %> data-code-extension function deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./my-function-package --target-org myorg --function-invoke-opt UnstructuredChunking
+  <%= config.bin %> data-code-extension function deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./payload --target-org myorg --function-invoke-opt UnstructuredChunking
 
 - Deploy with a specific CPU size:
 
-  <%= config.bin %> data-code-extension function deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./my-function-package --target-org myorg --cpu-size CPU_4XL --function-invoke-opt UnstructuredChunking
+  <%= config.bin %> data-code-extension function deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./payload --target-org myorg --cpu-size CPU_4XL --function-invoke-opt UnstructuredChunking
 
 # info.checkingPython
 

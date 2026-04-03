@@ -10,21 +10,21 @@ Executes an initialized Data Cloud custom code package against a Salesforce org.
 
 - Run a script package against the org with alias "myorg":
 
-  <%= config.bin %> data-code-extension script run --entrypoint ./my-script-package/entrypoint.py --target-org myorg
+  <%= config.bin %> data-code-extension script run --entrypoint ./my-script-package/payload/entrypoint.py --target-org myorg
 
 - Run with a custom config file:
 
-  <%= config.bin %> data-code-extension script run --entrypoint ./my-script-package/entrypoint.py --target-org myorg --config-file ./my-script-package/payload/config.json
+  <%= config.bin %> data-code-extension script run --entrypoint ./my-script-package/payload/entrypoint.py --target-org myorg --config-file ./my-script-package/payload/config.json
 
 # examples.function
 
 - Run a function package against the org with alias "myorg":
 
-  <%= config.bin %> data-code-extension function run --entrypoint ./my-function-package/entrypoint.py --target-org myorg
+  <%= config.bin %> data-code-extension function run --entrypoint ./my-function-package/payload/entrypoint.py --target-org myorg
 
 - Run with a custom config file:
 
-  <%= config.bin %> data-code-extension function run --entrypoint ./my-function-package/entrypoint.py --target-org myorg --config-file ./my-function-package/payload/config.json
+  <%= config.bin %> data-code-extension function run --entrypoint ./my-function-package/payload/entrypoint.py --target-org myorg --config-file ./my-function-package/payload/config.json
 
 # info.checkingPython
 
