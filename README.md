@@ -120,8 +120,7 @@ EXAMPLES
   Deploy with a specific CPU size:
 
     $ sf data-code-extension function deploy --name my-package --package-version 1.0.0 --description "My package" \
-      --package-dir ./payload --target-org myorg --cpu-size CPU_4XL --function-invoke-opt \
-      UnstructuredChunking
+      --package-dir ./payload --target-org myorg --cpu-size CPU_4XL --function-invoke-opt UnstructuredChunking
 
 FLAG DESCRIPTIONS
   -d, --description=<value>  Description of the package.
@@ -164,7 +163,7 @@ FLAG DESCRIPTIONS
     of your code.
 ```
 
-_See code: [src/commands/data-code-extension/function/deploy.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/0.1.2/src/commands/data-code-extension/function/deploy.ts)_
+_See code: [src/commands/data-code-extension/function/deploy.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/0.1.3/src/commands/data-code-extension/function/deploy.ts)_
 
 ## `sf data-code-extension function init`
 
@@ -188,7 +187,7 @@ DESCRIPTION
 EXAMPLES
   Initialize a function-based Data Cloud package:
 
-    $ sf data-code-extension function init --package-dir ./payload
+    $ sf data-code-extension function init --package-dir ./my-function-package
 
 FLAG DESCRIPTIONS
   -p, --package-dir=<value>  Directory path where the package will be created.
@@ -196,7 +195,7 @@ FLAG DESCRIPTIONS
     The directory path where the new package will be initialized. The directory will be created if it doesn't exist.
 ```
 
-_See code: [src/commands/data-code-extension/function/init.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/0.1.2/src/commands/data-code-extension/function/init.ts)_
+_See code: [src/commands/data-code-extension/function/init.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/0.1.3/src/commands/data-code-extension/function/init.ts)_
 
 ## `sf data-code-extension function run`
 
@@ -225,12 +224,13 @@ DESCRIPTION
 EXAMPLES
   Run a function package against the org with alias "myorg":
 
-    $ sf data-code-extension function run --entrypoint ./my-function-package/payload/entrypoint.py --target-org myorg
+    $ sf data-code-extension function run --entrypoint ./my-function-package/payload/entrypoint.py --target-org \
+      myorg
 
   Run with a custom config file:
 
-    $ sf data-code-extension function run --entrypoint ./my-function-package/payload/entrypoint.py --target-org myorg \
-      --config-file ./my-function-package/payload/config.json
+    $ sf data-code-extension function run --entrypoint ./my-function-package/payload/entrypoint.py --target-org \
+      myorg --config-file ./my-function-package/payload/config.json
 
 FLAG DESCRIPTIONS
   -e, --entrypoint=<value>  Entrypoint file for the package to run.
@@ -253,7 +253,7 @@ FLAG DESCRIPTIONS
     package's requirements.txt.
 ```
 
-_See code: [src/commands/data-code-extension/function/run.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/0.1.2/src/commands/data-code-extension/function/run.ts)_
+_See code: [src/commands/data-code-extension/function/run.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/0.1.3/src/commands/data-code-extension/function/run.ts)_
 
 ## `sf data-code-extension function scan`
 
@@ -289,7 +289,8 @@ EXAMPLES
 
   Scan without updating the requirements.txt file:
 
-    $ sf data-code-extension function scan --entrypoint ./my-function-package/payload/entrypoint.py --no-requirements
+    $ sf data-code-extension function scan --entrypoint ./my-function-package/payload/entrypoint.py \
+      --no-requirements
 
 FLAG DESCRIPTIONS
   -d, --dry-run  Preview changes without modifying any files.
@@ -313,7 +314,7 @@ FLAG DESCRIPTIONS
     Useful for testing different configurations without modifying the package's primary config.json.
 ```
 
-_See code: [src/commands/data-code-extension/function/scan.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/0.1.2/src/commands/data-code-extension/function/scan.ts)_
+_See code: [src/commands/data-code-extension/function/scan.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/0.1.3/src/commands/data-code-extension/function/scan.ts)_
 
 ## `sf data-code-extension function zip`
 
@@ -339,7 +340,7 @@ DESCRIPTION
 EXAMPLES
   Create an archive of a function package:
 
-    $ sf data-code-extension function zip --package-dir ./payload/payload
+    $ sf data-code-extension function zip --package-dir ./my-function-package/payload
 
 FLAG DESCRIPTIONS
   -n, --network=<value>  Network configuration, typically used for Jupyter notebook packages.
@@ -353,7 +354,7 @@ FLAG DESCRIPTIONS
     contain a valid package structure with config.json.
 ```
 
-_See code: [src/commands/data-code-extension/function/zip.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/0.1.2/src/commands/data-code-extension/function/zip.ts)_
+_See code: [src/commands/data-code-extension/function/zip.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/0.1.3/src/commands/data-code-extension/function/zip.ts)_
 
 ## `sf data-code-extension script deploy`
 
@@ -432,7 +433,7 @@ FLAG DESCRIPTIONS
     of your code.
 ```
 
-_See code: [src/commands/data-code-extension/script/deploy.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/0.1.2/src/commands/data-code-extension/script/deploy.ts)_
+_See code: [src/commands/data-code-extension/script/deploy.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/0.1.3/src/commands/data-code-extension/script/deploy.ts)_
 
 ## `sf data-code-extension script init`
 
@@ -456,7 +457,7 @@ DESCRIPTION
 EXAMPLES
   Initialize a script-based Data Cloud package:
 
-    $ sf data-code-extension script init --package-dir ./payload
+    $ sf data-code-extension script init --package-dir ./my-script-package
 
 FLAG DESCRIPTIONS
   -p, --package-dir=<value>  Directory path where the package will be created.
@@ -464,7 +465,7 @@ FLAG DESCRIPTIONS
     The directory path where the new package will be initialized. The directory will be created if it doesn't exist.
 ```
 
-_See code: [src/commands/data-code-extension/script/init.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/0.1.2/src/commands/data-code-extension/script/init.ts)_
+_See code: [src/commands/data-code-extension/script/init.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/0.1.3/src/commands/data-code-extension/script/init.ts)_
 
 ## `sf data-code-extension script run`
 
@@ -521,7 +522,7 @@ FLAG DESCRIPTIONS
     package's requirements.txt.
 ```
 
-_See code: [src/commands/data-code-extension/script/run.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/0.1.2/src/commands/data-code-extension/script/run.ts)_
+_See code: [src/commands/data-code-extension/script/run.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/0.1.3/src/commands/data-code-extension/script/run.ts)_
 
 ## `sf data-code-extension script scan`
 
@@ -581,7 +582,7 @@ FLAG DESCRIPTIONS
     Useful for testing different configurations without modifying the package's primary config.json.
 ```
 
-_See code: [src/commands/data-code-extension/script/scan.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/0.1.2/src/commands/data-code-extension/script/scan.ts)_
+_See code: [src/commands/data-code-extension/script/scan.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/0.1.3/src/commands/data-code-extension/script/scan.ts)_
 
 ## `sf data-code-extension script zip`
 
@@ -607,7 +608,7 @@ DESCRIPTION
 EXAMPLES
   Create an archive of a script package:
 
-    $ sf data-code-extension script zip --package-dir ./payload/payload
+    $ sf data-code-extension script zip --package-dir ./my-script-package/payload
 
 FLAG DESCRIPTIONS
   -n, --network=<value>  Network configuration, typically used for Jupyter notebook packages.
@@ -621,6 +622,6 @@ FLAG DESCRIPTIONS
     contain a valid package structure with config.json.
 ```
 
-_See code: [src/commands/data-code-extension/script/zip.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/0.1.2/src/commands/data-code-extension/script/zip.ts)_
+_See code: [src/commands/data-code-extension/script/zip.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/0.1.3/src/commands/data-code-extension/script/zip.ts)_
 
 <!-- commandsstop -->

@@ -1,3 +1,9 @@
+## [0.1.3](https://github.com/salesforcecli/plugin-data-code-extension/compare/0.1.2...0.1.3) (2026-04-03)
+
+### Bug Fixes
+
+- more consistent help text ([58bf7f7](https://github.com/salesforcecli/plugin-data-code-extension/commit/58bf7f7399f988062172ee0cbae96dc9ef9b6165))
+
 ## [0.1.2](https://github.com/salesforcecli/plugin-data-code-extension/compare/0.1.1...0.1.2) (2026-04-02)
 
 ### Bug Fixes
