@@ -10,7 +10,7 @@ Creates a ZIP archive of an initialized Data Code Extension package for deployme
 
 - Create an archive of a %s package:
 
-  <%= config.bin %> data-code-extension %s zip --package-dir ./my-%s-package
+  <%= config.bin %> data-code-extension %s zip --package-dir ./my-%s-package/payload
 
 # info.checkingPython
 

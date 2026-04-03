@@ -109,18 +109,18 @@ DESCRIPTION
 
   Deploys an initialized and packaged Data Cloud code extension to a Salesforce org. The package must be initialized and
   zipped before deployment. Supports both script and function packages with configurable CPU resources and network
-  settings.
+  settings. Run this command from within the package directory (e.g. cd ./my-script-package).
 
 EXAMPLES
   Deploy a function package to the org with alias "myorg":
 
     $ sf data-code-extension function deploy --name my-package --package-version 1.0.0 --description "My package" \
-      --package-dir ./my-function-package --target-org myorg --function-invoke-opt UnstructuredChunking
+      --package-dir ./payload --target-org myorg --function-invoke-opt UnstructuredChunking
 
   Deploy with a specific CPU size:
 
     $ sf data-code-extension function deploy --name my-package --package-version 1.0.0 --description "My package" \
-      --package-dir ./my-function-package --target-org myorg --cpu-size CPU_4XL --function-invoke-opt \
+      --package-dir ./payload --target-org myorg --cpu-size CPU_4XL --function-invoke-opt \
       UnstructuredChunking
 
 FLAG DESCRIPTIONS
@@ -188,7 +188,7 @@ DESCRIPTION
 EXAMPLES
   Initialize a function-based Data Cloud package:
 
-    $ sf data-code-extension function init --package-dir ./my-function-package
+    $ sf data-code-extension function init --package-dir ./payload
 
 FLAG DESCRIPTIONS
   -p, --package-dir=<value>  Directory path where the package will be created.
@@ -225,11 +225,11 @@ DESCRIPTION
 EXAMPLES
   Run a function package against the org with alias "myorg":
 
-    $ sf data-code-extension function run --entrypoint ./my-function-package/entrypoint.py --target-org myorg
+    $ sf data-code-extension function run --entrypoint ./my-function-package/payload/entrypoint.py --target-org myorg
 
   Run with a custom config file:
 
-    $ sf data-code-extension function run --entrypoint ./my-function-package/entrypoint.py --target-org myorg \
+    $ sf data-code-extension function run --entrypoint ./my-function-package/payload/entrypoint.py --target-org myorg \
       --config-file ./my-function-package/payload/config.json
 
 FLAG DESCRIPTIONS
@@ -279,21 +279,17 @@ DESCRIPTION
   dependencies. Updates the config.json and requirements.txt files based on the code analysis.
 
 EXAMPLES
-  Scan a function package in the current directory:
-
-    $ sf data-code-extension function scan
-
   Scan with a custom entrypoint file:
 
-    $ sf data-code-extension function scan --entrypoint ./payload/entrypoint.py
+    $ sf data-code-extension function scan --entrypoint ./my-function-package/payload/entrypoint.py
 
   Perform a dry run to see what would be changed:
 
-    $ sf data-code-extension function scan --dry-run
+    $ sf data-code-extension function scan --entrypoint ./my-function-package/payload/entrypoint.py --dry-run
 
   Scan without updating the requirements.txt file:
 
-    $ sf data-code-extension function scan --no-requirements
+    $ sf data-code-extension function scan --entrypoint ./my-function-package/payload/entrypoint.py --no-requirements
 
 FLAG DESCRIPTIONS
   -d, --dry-run  Preview changes without modifying any files.
@@ -343,7 +339,7 @@ DESCRIPTION
 EXAMPLES
   Create an archive of a function package:
 
-    $ sf data-code-extension function zip --package-dir ./my-function-package
+    $ sf data-code-extension function zip --package-dir ./payload/payload
 
 FLAG DESCRIPTIONS
   -n, --network=<value>  Network configuration, typically used for Jupyter notebook packages.
@@ -386,18 +382,18 @@ DESCRIPTION
 
   Deploys an initialized and packaged Data Cloud code extension to a Salesforce org. The package must be initialized and
   zipped before deployment. Supports both script and function packages with configurable CPU resources and network
-  settings.
+  settings. Run this command from within the package directory (e.g. cd ./my-script-package).
 
 EXAMPLES
   Deploy a script package to the org with alias "myorg":
 
     $ sf data-code-extension script deploy --name my-package --package-version 1.0.0 --description "My package" \
-      --package-dir ./my-script-package --target-org myorg
+      --package-dir ./payload --target-org myorg
 
   Deploy with a specific CPU size:
 
     $ sf data-code-extension script deploy --name my-package --package-version 1.0.0 --description "My package" \
-      --package-dir ./my-script-package --target-org myorg --cpu-size CPU_4XL
+      --package-dir ./payload --target-org myorg --cpu-size CPU_4XL
 
 FLAG DESCRIPTIONS
   -d, --description=<value>  Description of the package.
@@ -460,7 +456,7 @@ DESCRIPTION
 EXAMPLES
   Initialize a script-based Data Cloud package:
 
-    $ sf data-code-extension script init --package-dir ./my-script-package
+    $ sf data-code-extension script init --package-dir ./payload
 
 FLAG DESCRIPTIONS
   -p, --package-dir=<value>  Directory path where the package will be created.
@@ -497,11 +493,11 @@ DESCRIPTION
 EXAMPLES
   Run a script package against the org with alias "myorg":
 
-    $ sf data-code-extension script run --entrypoint ./my-script-package/entrypoint.py --target-org myorg
+    $ sf data-code-extension script run --entrypoint ./my-script-package/payload/entrypoint.py --target-org myorg
 
   Run with a custom config file:
 
-    $ sf data-code-extension script run --entrypoint ./my-script-package/entrypoint.py --target-org myorg \
+    $ sf data-code-extension script run --entrypoint ./my-script-package/payload/entrypoint.py --target-org myorg \
       --config-file ./my-script-package/payload/config.json
 
 FLAG DESCRIPTIONS
@@ -551,21 +547,17 @@ DESCRIPTION
   dependencies. Updates the config.json and requirements.txt files based on the code analysis.
 
 EXAMPLES
-  Scan a script package in the current directory:
-
-    $ sf data-code-extension script scan
-
   Scan with a custom entrypoint file:
 
-    $ sf data-code-extension script scan --entrypoint ./payload/entrypoint.py
+    $ sf data-code-extension script scan --entrypoint ./my-script-package/payload/entrypoint.py
 
   Perform a dry run to see what would be changed:
 
-    $ sf data-code-extension script scan --dry-run
+    $ sf data-code-extension script scan --entrypoint ./my-script-package/payload/entrypoint.py --dry-run
 
   Scan without updating the requirements.txt file:
 
-    $ sf data-code-extension script scan --no-requirements
+    $ sf data-code-extension script scan --entrypoint ./my-script-package/payload/entrypoint.py --no-requirements
 
 FLAG DESCRIPTIONS
   -d, --dry-run  Preview changes without modifying any files.
@@ -615,7 +607,7 @@ DESCRIPTION
 EXAMPLES
   Create an archive of a script package:
 
-    $ sf data-code-extension script zip --package-dir ./my-script-package
+    $ sf data-code-extension script zip --package-dir ./payload/payload
 
 FLAG DESCRIPTIONS
   -n, --network=<value>  Network configuration, typically used for Jupyter notebook packages.
