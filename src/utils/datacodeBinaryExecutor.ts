@@ -95,13 +95,10 @@ export class DatacodeBinaryExecutor {
         timeout: 30_000,
       });
 
-      // Parse created files from output if available
-      const filesCreated: string[] = [];
-      const filePattern = /Created (?:file|directory): (.+)/g;
-      let match;
-      while ((match = filePattern.exec(stdout)) !== null) {
-        filesCreated.push(match[1]);
-      }
+      // Parse the template directory from init output
+      // Python CLI outputs: "Copying template to <dir>"
+      const copyMatch = /Copying template to (.+)/.exec(stdout);
+      const filesCreated = copyMatch ? [copyMatch[1].trim()] : undefined;
 
       return {
         stdout: stdout.trim(),
@@ -159,26 +156,11 @@ export class DatacodeBinaryExecutor {
         timeout: 60_000,
       });
 
-      // Parse scan results from output
-      const permissions: string[] = [];
-      const requirements: string[] = [];
+      // Parse scanned files from output
+      // Python CLI outputs: "Scanning <file>..."
       const filesScanned: string[] = [];
-
-      // Parse permissions (expected format: "Permission required: <permission>")
-      const permissionPattern = /Permission required: (.+)/g;
+      const filePattern = /Scanning (.+)\.\.\./g;
       let match;
-      while ((match = permissionPattern.exec(stdout)) !== null) {
-        permissions.push(match[1].trim());
-      }
-
-      // Parse requirements (expected format: "Dependency found: <requirement>")
-      const requirementPattern = /Dependency found: (.+)/g;
-      while ((match = requirementPattern.exec(stdout)) !== null) {
-        requirements.push(match[1].trim());
-      }
-
-      // Parse scanned files (expected format: "Scanned: <file>")
-      const filePattern = /Scanned: (.+)/g;
       while ((match = filePattern.exec(stdout)) !== null) {
         filesScanned.push(match[1].trim());
       }
@@ -187,8 +169,6 @@ export class DatacodeBinaryExecutor {
         stdout: stdout.trim(),
         stderr: stderr.trim(),
         workingDirectory: workingDir,
-        permissions: permissions.length > 0 ? permissions : undefined,
-        requirements: requirements.length > 0 ? requirements : undefined,
         filesScanned: filesScanned.length > 0 ? filesScanned : undefined,
       };
     } catch (error) {
@@ -224,36 +204,9 @@ export class DatacodeBinaryExecutor {
         timeout: 120_000,
       });
 
-      // Parse archive path from output
-      let archivePath: string | undefined;
-      const archivePathPattern = /Archive created: (.+\.zip)/i;
-      const archiveMatch = archivePathPattern.exec(stdout);
-      if (archiveMatch) {
-        archivePath = archiveMatch[1].trim();
-      }
-
-      // Parse file count from output
-      let fileCount: number | undefined;
-      const fileCountPattern = /(\d+) files? (?:added|included|archived)/i;
-      const countMatch = fileCountPattern.exec(stdout);
-      if (countMatch) {
-        fileCount = parseInt(countMatch[1], 10);
-      }
-
-      // Parse archive size from output
-      let archiveSize: string | undefined;
-      const sizePattern = /Archive size: (.+)/i;
-      const sizeMatch = sizePattern.exec(stdout);
-      if (sizeMatch) {
-        archiveSize = sizeMatch[1].trim();
-      }
-
       return {
         stdout: stdout.trim(),
         stderr: stderr.trim(),
-        archivePath,
-        fileCount,
-        archiveSize,
       };
     } catch (error) {
       const spawnError = error as SpawnError;
@@ -368,36 +321,9 @@ export class DatacodeBinaryExecutor {
           return;
         }
 
-        // Parse deployment ID from output
-        let deploymentId: string | undefined;
-        const deploymentIdPattern = /Deployment ID: (.+)/i;
-        const deploymentMatch = deploymentIdPattern.exec(stdoutTrimmed);
-        if (deploymentMatch) {
-          deploymentId = deploymentMatch[1].trim();
-        }
-
-        // Parse endpoint URL from output
-        let endpointUrl: string | undefined;
-        const endpointUrlPattern = /Endpoint URL: (.+)/i;
-        const endpointMatch = endpointUrlPattern.exec(stdoutTrimmed);
-        if (endpointMatch) {
-          endpointUrl = endpointMatch[1].trim();
-        }
-
-        // Parse deployment status from output
-        let status: string | undefined;
-        const statusPattern = /Status: (.+)/i;
-        const statusMatch = statusPattern.exec(stdoutTrimmed);
-        if (statusMatch) {
-          status = statusMatch[1].trim();
-        }
-
         resolve({
           stdout: stdoutTrimmed,
           stderr: stderrTrimmed,
-          deploymentId,
-          endpointUrl,
-          status,
         });
       });
 
@@ -446,27 +372,9 @@ export class DatacodeBinaryExecutor {
         timeout: 300_000,
       });
 
-      // Parse status from output
-      let status: string | undefined;
-      const statusPattern = /Status: (.+)/i;
-      const statusMatch = statusPattern.exec(stdout);
-      if (statusMatch) {
-        status = statusMatch[1].trim();
-      }
-
-      // Parse run output from output
-      let output: string | undefined;
-      const outputPattern = /Output: (.+)/i;
-      const outputMatch = outputPattern.exec(stdout);
-      if (outputMatch) {
-        output = outputMatch[1].trim();
-      }
-
       return {
         stdout: stdout.trim(),
         stderr: stderr.trim(),
-        status,
-        output,
       };
     } catch (error) {
       const spawnError = error as SpawnError;

@@ -21,6 +21,73 @@ import { DatacodeBinaryExecutor } from '../../src/utils/datacodeBinaryExecutor.j
 
 const execAsync = promisify(exec);
 
+// ── Regex unit tests (no subprocess) ─────────────────────────────────────────
+// These tests verify that the stdout parsing patterns match the actual Python CLI
+// output format. They run purely in-process and do not require the binary.
+
+describe('DatacodeBinaryExecutor stdout parsing patterns', () => {
+  describe('init: /Copying template to (.+)/', () => {
+    const pattern = /Copying template to (.+)/;
+
+    it('extracts directory from actual Python CLI output', () => {
+      const stdout =
+        'Copying template to /home/user/my-package\nStart developing by updating the code in /home/user/my-package/payload/entrypoint.py';
+      const match = pattern.exec(stdout);
+      expect(match).to.not.be.null;
+      expect(match![1].trim()).to.equal('/home/user/my-package');
+    });
+
+    it('returns null when output does not contain expected line', () => {
+      const stdout = 'Created file: /some/file.py';
+      const match = pattern.exec(stdout);
+      expect(match).to.be.null;
+    });
+
+    it('trims trailing whitespace from captured path', () => {
+      const stdout = 'Copying template to /some/dir  ';
+      const match = pattern.exec(stdout);
+      expect(match![1].trim()).to.equal('/some/dir');
+    });
+  });
+
+  describe('scan: /Scanning (.+)\\.\\.\\./ (global)', () => {
+    const pattern = /Scanning (.+)\.\.\./g;
+
+    it('extracts the entrypoint file being scanned', () => {
+      const stdout =
+        'Dumping scan results to config file: ./payload/config.json\nScanning payload/entrypoint.py...\n{"sdkVersion":"1.0.0"}';
+      const filesScanned: string[] = [];
+      let match;
+      while ((match = pattern.exec(stdout)) !== null) {
+        filesScanned.push(match[1].trim());
+      }
+      expect(filesScanned).to.deep.equal(['payload/entrypoint.py']);
+    });
+
+    it('collects multiple scanned files when present', () => {
+      const stdout = 'Scanning a.py...\nScanning b.py...';
+      const filesScanned: string[] = [];
+      let match;
+      while ((match = pattern.exec(stdout)) !== null) {
+        filesScanned.push(match[1].trim());
+      }
+      expect(filesScanned).to.deep.equal(['a.py', 'b.py']);
+    });
+
+    it('returns empty array when no scanning lines present', () => {
+      const stdout = 'Permission required: READ_DATA\nDependency found: pandas';
+      const filesScanned: string[] = [];
+      let match;
+      while ((match = pattern.exec(stdout)) !== null) {
+        filesScanned.push(match[1].trim());
+      }
+      expect(filesScanned).to.be.empty;
+    });
+  });
+});
+
+// ── Integration tests (require datacustomcode binary) ────────────────────────
+
 describe('DatacodeBinaryExecutor', () => {
   const $$ = new TestContext();
 
