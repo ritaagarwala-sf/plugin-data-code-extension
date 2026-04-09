@@ -1,3 +1,9 @@
+## [0.1.4](https://github.com/salesforcecli/plugin-data-code-extension/compare/0.1.3...0.1.4) (2026-04-09)
+
+### Bug Fixes
+
+- truing up some bad regex ([09a7c3f](https://github.com/salesforcecli/plugin-data-code-extension/commit/09a7c3feca7c8d4c3e86dc33fa24e320e45a036e))
+
 ## [0.1.3](https://github.com/salesforcecli/plugin-data-code-extension/compare/0.1.2...0.1.3) (2026-04-03)
 
 ### Bug Fixes
