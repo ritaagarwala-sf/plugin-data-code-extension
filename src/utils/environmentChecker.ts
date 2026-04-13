@@ -41,11 +41,28 @@ export async function checkEnvironment(
   spinner.stop();
   log(messages.getMessage('info.packageFound', [packageInfo.name, packageInfo.version]));
 
+  // Fire the update check now — it runs in parallel with the binary check so it doesn't add wait time.
+  const updateCheckPromise = PipChecker.checkForUpdate(packageInfo);
+
   spinner.start(messages.getMessage('info.checkingBinary'));
-  const binaryInfo = await DatacodeBinaryChecker.checkBinary();
+  const [binaryInfo, updateInfo] = await Promise.all([DatacodeBinaryChecker.checkBinary(), updateCheckPromise]);
 
   spinner.stop();
   log(messages.getMessage('info.binaryFound', [binaryInfo.version]));
+
+  if (updateInfo) {
+    const pipMessages = Messages.loadMessages('@salesforce/plugin-data-code-extension', 'pipChecker');
+    log(
+      pipMessages.getMessage('warn.updateAvailable', [
+        updateInfo.packageName,
+        updateInfo.latestVersion,
+        updateInfo.installedVersion,
+      ])
+    );
+    for (const action of pipMessages.getMessages('actions.updatePackage')) {
+      log(`  ${action}`);
+    }
+  }
 
   return { pythonInfo, packageInfo, binaryInfo };
 }
