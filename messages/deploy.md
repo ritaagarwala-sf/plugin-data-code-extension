@@ -159,3 +159,11 @@ Function invocation option (function packages only).
 # flags.functionInvokeOpt.description
 
 Configuration for how functions should be invoked. UnstructuredChunking is only valid option at this point
+
+# error.flagEmpty
+
+The --%s flag requires a non-empty value.
+
+# error.flagTooLong
+
+The --%s flag value exceeds the maximum length of %s characters (%s provided).

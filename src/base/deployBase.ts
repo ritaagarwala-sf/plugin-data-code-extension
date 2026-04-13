@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
-import { Messages, Org } from '@salesforce/core';
+import { Messages, Org, SfError } from '@salesforce/core';
 import { DatacodeBinaryExecutor, type DatacodeDeployExecutionResult } from '../utils/datacodeBinaryExecutor.js';
 import { checkEnvironment } from '../utils/environmentChecker.js';
 import { type SharedResultProps } from './types.js';
@@ -50,17 +50,46 @@ export abstract class DeployBase<TFlags extends BaseDeployFlags = BaseDeployFlag
       summary: messages.getMessage('flags.name.summary'),
       description: messages.getMessage('flags.name.description'),
       required: true,
+      parse: (input) => {
+        if (input.length === 0) throw new SfError(messages.getMessage('error.flagEmpty', ['name']), 'InvalidFlagValue');
+        if (input.length > 64)
+          throw new SfError(
+            messages.getMessage('error.flagTooLong', ['name', '64', input.length.toString()]),
+            'InvalidFlagValue'
+          );
+        return Promise.resolve(input);
+      },
     }),
     'package-version': Flags.string({
       summary: messages.getMessage('flags.packageVersion.summary'),
       description: messages.getMessage('flags.packageVersion.description'),
       required: true,
+      parse: (input) => {
+        if (input.length === 0)
+          throw new SfError(messages.getMessage('error.flagEmpty', ['package-version']), 'InvalidFlagValue');
+        if (input.length > 64)
+          throw new SfError(
+            messages.getMessage('error.flagTooLong', ['package-version', '64', input.length.toString()]),
+            'InvalidFlagValue'
+          );
+        return Promise.resolve(input);
+      },
     }),
     description: Flags.string({
       char: 'd',
       summary: messages.getMessage('flags.description.summary'),
       description: messages.getMessage('flags.description.description'),
       required: true,
+      parse: (input) => {
+        if (input.length === 0)
+          throw new SfError(messages.getMessage('error.flagEmpty', ['description']), 'InvalidFlagValue');
+        if (input.length > 255)
+          throw new SfError(
+            messages.getMessage('error.flagTooLong', ['description', '255', input.length.toString()]),
+            'InvalidFlagValue'
+          );
+        return Promise.resolve(input);
+      },
     }),
     network: Flags.string({
       summary: messages.getMessage('flags.network.summary'),
@@ -102,6 +131,10 @@ export abstract class DeployBase<TFlags extends BaseDeployFlags = BaseDeployFlag
     const network = flags.network;
 
     const additionalFlags = this.getAdditionalFlags(flags);
+
+    if (packageDir.length === 0) {
+      throw new SfError(messages.getMessage('error.flagEmpty', ['package-dir']), 'InvalidFlagValue');
+    }
 
     try {
       const { pythonInfo, packageInfo, binaryInfo } = await checkEnvironment(
