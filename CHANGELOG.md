@@ -1,3 +1,10 @@
+## [0.1.5](https://github.com/salesforcecli/plugin-data-code-extension/compare/0.1.4...0.1.5) (2026-04-14)
+
+### Bug Fixes
+
+- adding character min/max checking on required flags ([fc23bba](https://github.com/salesforcecli/plugin-data-code-extension/commit/fc23bba49f7e55cb7ae47b8de7ab703b14b2a4ae))
+- adding pip package update checker and user warning ([957d52d](https://github.com/salesforcecli/plugin-data-code-extension/commit/957d52dd831196a97974659da15a31f536391082))
+
 ## [0.1.4](https://github.com/salesforcecli/plugin-data-code-extension/compare/0.1.3...0.1.4) (2026-04-09)
 
 ### Bug Fixes
