@@ -1,3 +1,13 @@
+# warn.updateAvailable
+
+A newer version of '%s' is available: %s (you have %s).
+
+# actions.updatePackage
+
+- Upgrade using pip: pip install --upgrade salesforce-data-customcode
+- Or upgrade using pip3: pip3 install --upgrade salesforce-data-customcode
+- Or upgrade using python3: python3 -m pip install --upgrade salesforce-data-customcode
+
 # error.pipNotFound
 
 Pip is not installed or not accessible in your system PATH.

@@ -14,15 +14,94 @@
  * limitations under the License.
  */
 import { expect } from 'chai';
+import type * as Sinon from 'sinon';
 import { TestContext } from '@salesforce/core/testSetup';
 import { SfError } from '@salesforce/core';
-import { PipChecker } from '../../src/utils/pipChecker.js';
+import { PipChecker, type PipPackageInfo } from '../../src/utils/pipChecker.js';
+
+const INSTALLED_PACKAGE: PipPackageInfo = {
+  name: 'salesforce-data-customcode',
+  version: '0.1.28',
+  location: '/usr/local/lib/python3.11/site-packages',
+  pipCommand: 'pip3',
+};
 
 describe('PipChecker', () => {
   const $$ = new TestContext();
 
   afterEach(() => {
     $$.restore();
+  });
+
+  describe('checkForUpdate', () => {
+    let pypiStub: Sinon.SinonStub;
+
+    beforeEach(() => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      pypiStub = $$.SANDBOX.stub(PipChecker as any, 'fetchLatestPyPIVersion');
+    });
+
+    it('should return PipUpdateInfo when a newer version is available', async () => {
+      pypiStub.resolves('0.2.0');
+
+      const result = await PipChecker.checkForUpdate(INSTALLED_PACKAGE);
+
+      expect(result).to.not.be.null;
+      expect(result?.packageName).to.equal('salesforce-data-customcode');
+      expect(result?.installedVersion).to.equal('0.1.28');
+      expect(result?.latestVersion).to.equal('0.2.0');
+      expect(result?.pipCommand).to.equal('pip3');
+    });
+
+    it('should return null when already on the latest version', async () => {
+      pypiStub.resolves('0.1.28');
+
+      const result = await PipChecker.checkForUpdate(INSTALLED_PACKAGE);
+
+      expect(result).to.be.null;
+    });
+
+    it('should return null when installed version is newer than PyPI (e.g. pre-release)', async () => {
+      pypiStub.resolves('0.1.0');
+
+      const result = await PipChecker.checkForUpdate(INSTALLED_PACKAGE);
+
+      expect(result).to.be.null;
+    });
+
+    it('should return null when the PyPI lookup returns null', async () => {
+      pypiStub.resolves(null);
+
+      const result = await PipChecker.checkForUpdate(INSTALLED_PACKAGE);
+
+      expect(result).to.be.null;
+    });
+
+    it('should return null when the PyPI lookup throws', async () => {
+      pypiStub.rejects(new Error('network error'));
+
+      const result = await PipChecker.checkForUpdate(INSTALLED_PACKAGE);
+
+      expect(result).to.be.null;
+    });
+
+    it('should detect a newer patch version', async () => {
+      pypiStub.resolves('0.1.29');
+
+      const result = await PipChecker.checkForUpdate(INSTALLED_PACKAGE);
+
+      expect(result).to.not.be.null;
+      expect(result?.latestVersion).to.equal('0.1.29');
+    });
+
+    it('should detect a newer major version', async () => {
+      pypiStub.resolves('1.0.0');
+
+      const result = await PipChecker.checkForUpdate(INSTALLED_PACKAGE);
+
+      expect(result).to.not.be.null;
+      expect(result?.latestVersion).to.equal('1.0.0');
+    });
   });
 
   describe('checkPackage', () => {

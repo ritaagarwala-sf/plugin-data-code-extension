@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { get } from 'node:https';
 import { SfError } from '@salesforce/core';
 import { Messages } from '@salesforce/core';
 import { spawnAsync } from './spawnHelper.js';
@@ -24,6 +25,13 @@ export type PipPackageInfo = {
   name: string;
   version: string;
   location: string;
+  pipCommand: string;
+};
+
+export type PipUpdateInfo = {
+  packageName: string;
+  installedVersion: string;
+  latestVersion: string;
   pipCommand: string;
 };
 
@@ -73,6 +81,85 @@ export class PipChecker {
       'PackageNotInstalled',
       messages.getMessages('actions.packageNotInstalled')
     );
+  }
+
+  /**
+   * Checks PyPI for a newer version of the given package.
+   * Returns PipUpdateInfo if a newer version is available, null if up-to-date or if the check fails.
+   * Never throws — update checks are best-effort and must not block the user.
+   *
+   * @param packageInfo The installed package info returned by checkPackage
+   */
+  public static async checkForUpdate(packageInfo: PipPackageInfo): Promise<PipUpdateInfo | null> {
+    try {
+      const latestVersion = await this.fetchLatestPyPIVersion(packageInfo.name);
+
+      if (!latestVersion || !this.isNewerVersion(packageInfo.version, latestVersion)) {
+        return null;
+      }
+
+      return {
+        packageName: packageInfo.name,
+        installedVersion: packageInfo.version,
+        latestVersion,
+        pipCommand: packageInfo.pipCommand,
+      };
+    } catch {
+      // Network errors, timeouts, parse failures — silently ignore
+      return null;
+    }
+  }
+
+  private static fetchLatestPyPIVersion(packageName: string): Promise<string | null> {
+    return new Promise((resolve) => {
+      const req = get(`https://pypi.org/pypi/${encodeURIComponent(packageName)}/json`, { timeout: 5000 }, (res) => {
+        if (res.statusCode !== 200) {
+          res.resume();
+          resolve(null);
+          return;
+        }
+        let body = '';
+        res.setEncoding('utf8');
+        res.on('data', (chunk: string) => {
+          body += chunk;
+        });
+        res.on('end', () => {
+          try {
+            const data = JSON.parse(body) as { info?: { version?: string } };
+            resolve(data?.info?.version ?? null);
+          } catch {
+            resolve(null);
+          }
+        });
+      });
+      req.on('timeout', () => {
+        req.destroy();
+        resolve(null);
+      });
+      req.on('error', () => resolve(null));
+    });
+  }
+
+  /**
+   * Returns true if latestVersion is strictly newer than installedVersion.
+   * Compares major.minor.patch numerically; pre-release suffixes are ignored.
+   */
+  private static isNewerVersion(installedVersion: string, latestVersion: string): boolean {
+    const parse = (v: string): number[] =>
+      v
+        .split('.')
+        .slice(0, 3)
+        .map((part) => parseInt(part, 10) || 0);
+
+    const installed = parse(installedVersion);
+    const latest = parse(latestVersion);
+
+    for (let i = 0; i < 3; i++) {
+      const ins = installed[i] ?? 0;
+      const lat = latest[i] ?? 0;
+      if (lat !== ins) return lat > ins;
+    }
+    return false;
   }
 
   /**

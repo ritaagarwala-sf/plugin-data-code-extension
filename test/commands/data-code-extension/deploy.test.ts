@@ -511,4 +511,172 @@ describe('data-code-extension deploy', () => {
       }
     });
   });
+
+  describe('flag validation', () => {
+    const baseFlags = [
+      '--package-version',
+      '1.0.0',
+      '--description',
+      'Test',
+      '--package-dir',
+      '',
+      '--target-org',
+      'test@example.com',
+    ];
+
+    it('should reject an empty --name value', async () => {
+      try {
+        await ScriptDeploy.run(['--name', '', ...baseFlags]);
+        expect.fail('Should have thrown an error');
+      } catch (error: unknown) {
+        expect(error).to.be.instanceOf(Error);
+      }
+    });
+
+    it('should reject --name longer than 64 characters', async () => {
+      try {
+        await ScriptDeploy.run(['--name', 'a'.repeat(65), ...baseFlags]);
+        expect.fail('Should have thrown an error');
+      } catch (error: unknown) {
+        expect(error).to.be.instanceOf(SfError);
+        expect((error as SfError).name).to.equal('InvalidFlagValue');
+      }
+    });
+
+    it('should accept --name at the 64-character boundary', async () => {
+      // parse() throws for >64 but must not throw for exactly 64
+      try {
+        await ScriptDeploy.run(['--name', 'a'.repeat(64), ...baseFlags]);
+      } catch (error: unknown) {
+        if (error instanceof SfError && (error as SfError).name === 'InvalidFlagValue') {
+          expect.fail('Should not have thrown InvalidFlagValue for a 64-char name');
+        }
+        // Other errors (e.g. directory not found) are acceptable in this test
+      }
+    });
+
+    it('should reject an empty --package-version value', async () => {
+      try {
+        await ScriptDeploy.run([
+          '--name',
+          'test',
+          '--package-version',
+          '',
+          '--description',
+          'Test',
+          '--package-dir',
+          testDir,
+          '--target-org',
+          'test@example.com',
+        ]);
+        expect.fail('Should have thrown an error');
+      } catch (error: unknown) {
+        expect(error).to.be.instanceOf(Error);
+      }
+    });
+
+    it('should reject --package-version longer than 64 characters', async () => {
+      try {
+        await ScriptDeploy.run([
+          '--name',
+          'test',
+          '--package-version',
+          'a'.repeat(65),
+          '--description',
+          'Test',
+          '--package-dir',
+          testDir,
+          '--target-org',
+          'test@example.com',
+        ]);
+        expect.fail('Should have thrown an error');
+      } catch (error: unknown) {
+        expect(error).to.be.instanceOf(SfError);
+        expect((error as SfError).name).to.equal('InvalidFlagValue');
+      }
+    });
+
+    it('should accept --package-version at the 64-character boundary', async () => {
+      try {
+        await ScriptDeploy.run([
+          '--name',
+          'test',
+          '--package-version',
+          'a'.repeat(64),
+          '--description',
+          'Test',
+          '--package-dir',
+          testDir,
+          '--target-org',
+          'test@example.com',
+        ]);
+      } catch (error: unknown) {
+        if (error instanceof SfError && (error as SfError).name === 'InvalidFlagValue') {
+          expect.fail('Should not have thrown InvalidFlagValue for a 64-char package-version');
+        }
+      }
+    });
+
+    it('should reject an empty --description value', async () => {
+      try {
+        await ScriptDeploy.run([
+          '--name',
+          'test',
+          '--package-version',
+          '1.0.0',
+          '--description',
+          '',
+          '--package-dir',
+          testDir,
+          '--target-org',
+          'test@example.com',
+        ]);
+        expect.fail('Should have thrown an error');
+      } catch (error: unknown) {
+        expect(error).to.be.instanceOf(Error);
+      }
+    });
+
+    it('should reject --description longer than 255 characters', async () => {
+      try {
+        await ScriptDeploy.run([
+          '--name',
+          'test',
+          '--package-version',
+          '1.0.0',
+          '--description',
+          'a'.repeat(256),
+          '--package-dir',
+          testDir,
+          '--target-org',
+          'test@example.com',
+        ]);
+        expect.fail('Should have thrown an error');
+      } catch (error: unknown) {
+        expect(error).to.be.instanceOf(SfError);
+        expect((error as SfError).name).to.equal('InvalidFlagValue');
+      }
+    });
+
+    it('should accept --description at the 255-character boundary', async () => {
+      try {
+        await ScriptDeploy.run([
+          '--name',
+          'test',
+          '--package-version',
+          '1.0.0',
+          '--description',
+          'a'.repeat(255),
+          '--package-dir',
+          testDir,
+          '--target-org',
+          'test@example.com',
+        ]);
+      } catch (error: unknown) {
+        if (error instanceof SfError && (error as SfError).name === 'InvalidFlagValue') {
+          expect.fail('Should not have thrown InvalidFlagValue for a 255-char description');
+        }
+      }
+    });
+  });
 });
