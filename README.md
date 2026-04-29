@@ -203,12 +203,13 @@ Run a Data Code Extension function package locally using data from your Salesfor
 
 ```
 USAGE
-  $ sf data-code-extension function run -e <value> -o <value> [--flags-dir <value>] [--config-file <value>]
+  $ sf data-code-extension function run -e <value> -o <value> [--flags-dir <value>] [--config-file <value>] [--test-with <value>]
   [--dependencies <value>]
 
 FLAGS
   -e, --entrypoint=<value>    (required) Entrypoint file for the package to run.
   -o, --target-org=<value>    (required) Target Salesforce org to run against.
+  -t, --test-with=<value>     Path to test.json file to test Data Code Extension function
       --config-file=<value>   Path to a config file.
       --dependencies=<value>  Dependencies override for the run.
 
@@ -224,13 +225,13 @@ DESCRIPTION
 EXAMPLES
   Run a function package against the org with alias "myorg":
 
-    $ sf data-code-extension function run --entrypoint ./my-function-package/payload/entrypoint.py --target-org \
-      myorg
+    $ sf data-code-extension function run --entrypoint ./my-function-package/payload/entrypoint.py --test-with \
+    ./my-function-package/payload/tests/test.json --target-org myorg
 
   Run with a custom config file:
 
-    $ sf data-code-extension function run --entrypoint ./my-function-package/payload/entrypoint.py --target-org \
-      myorg --config-file ./my-function-package/payload/config.json
+    $ sf data-code-extension function run --entrypoint ./my-function-package/payload/entrypoint.py --test-with \
+    ./my-function-package/payload/tests/tests.json --target-org myorg --config-file ./my-function-package/payload/config.json 
 
 FLAG DESCRIPTIONS
   -e, --entrypoint=<value>  Entrypoint file for the package to run.
@@ -241,6 +242,10 @@ FLAG DESCRIPTIONS
 
     The alias or username of the Salesforce org where you want to run the Data Cloud custom code package. The org must
     have Data Cloud enabled and appropriate permissions.
+
+  -t, --test-with=<value>  Path to test.json file to test Data Code Extension function 
+  
+    Path to a JSON file that provides input request for the function. 
 
   --config-file=<value>  Path to a config file.
 
