@@ -20,7 +20,7 @@ Initializes the Data Code Extension by checking system requirements and setting 
 
 - Initialize a function package with explicit feature flag:
 
-  <%= config.bin %> data-code-extension function init --package-dir ./my-function-package --used-in-feature SearchIndexChunking
+  <%= config.bin %> data-code-extension function init --package-dir ./my-function-package --use-in-feature SearchIndexChunking
 
 # examples.script
 
@@ -84,10 +84,10 @@ Directory path where the package will be created.
 
 The directory path where the new package will be initialized. The directory will be created if it doesn't exist.
 
-# flags.usedInFeature.summary
+# flags.useInFeature.summary
 
 Feature flag for function initialization (function packages only).
 
-# flags.usedInFeature.description
+# flags.useInFeature.description
 
 Configuration for which feature this function will be used in. SearchIndexChunking is the only valid option and is used by default if not specified.

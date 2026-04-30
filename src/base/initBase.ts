@@ -50,7 +50,7 @@ export abstract class InitBase<TFlags extends BaseInitFlags = BaseInitFlags> ext
       const executionResult = await DatacodeBinaryExecutor.executeBinaryInit(
         codeType,
         packageDir,
-        additionalFlags.usedInFeature as string | undefined
+        additionalFlags.useInFeature as string | undefined
       );
 
       this.spinner.stop();

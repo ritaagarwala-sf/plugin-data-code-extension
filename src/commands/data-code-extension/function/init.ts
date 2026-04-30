@@ -21,7 +21,7 @@ Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension', 'init');
 
 export type FunctionInitFlags = BaseInitFlags & {
-  'used-in-feature': string;
+  'use-in-feature': string;
 };
 
 // eslint-disable-next-line sf-plugin/only-extend-SfCommand
@@ -41,10 +41,10 @@ export default class Init extends InitBase<FunctionInitFlags> {
       exists: false, // Allow non-existing directories (will be created)
     }),
     // Function-specific flag
-    'used-in-feature': Flags.string({
+    'use-in-feature': Flags.string({
       char: 'u',
-      summary: messages.getMessage('flags.usedInFeature.summary'),
-      description: messages.getMessage('flags.usedInFeature.description'),
+      summary: messages.getMessage('flags.useInFeature.summary'),
+      description: messages.getMessage('flags.useInFeature.description'),
       options: ['SearchIndexChunking'],
       default: 'SearchIndexChunking',
       required: false,
@@ -64,7 +64,7 @@ export default class Init extends InitBase<FunctionInitFlags> {
   // eslint-disable-next-line class-methods-use-this
   protected getAdditionalFlags(flags: FunctionInitFlags): Record<string, unknown> {
     return {
-      usedInFeature: flags['used-in-feature'],
+      useInFeature: flags['use-in-feature'],
     };
   }
 }

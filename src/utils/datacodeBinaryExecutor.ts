@@ -83,20 +83,20 @@ export class DatacodeBinaryExecutor {
    *
    * @param codeType The type of code package to initialize
    * @param packageDir The directory to initialize the package in
-   * @param usedInFeature Optional feature flag (function packages only)
+   * @param useInFeature Optional feature flag (function packages only)
    * @returns Execution result with stdout, stderr, and parsed file list
    * @throws SfError if execution fails
    */
   public static async executeBinaryInit(
     codeType: 'script' | 'function',
     packageDir: string,
-    usedInFeature?: string
+    useInFeature?: string
   ): Promise<DatacodeInitExecutionResult> {
     try {
       const args = ['init', '--code-type', codeType];
 
-      if (usedInFeature) {
-        args.push('--used-in-feature', usedInFeature);
+      if (useInFeature) {
+        args.push('--use-in-feature', useInFeature);
       }
 
       args.push(packageDir);

@@ -168,10 +168,10 @@ USAGE
   $ sf data-code-extension function init -p <value> [--flags-dir <value>] [-u SearchIndexChunking]
 
 FLAGS
-  -p, --package-dir=<value>       (required) Directory path where the package will be created.
-  -u, --used-in-feature=<option>  [default: SearchIndexChunking] Feature flag for function initialization (function
-                                  packages only).
-                                  <options: SearchIndexChunking>
+  -p, --package-dir=<value>      (required) Directory path where the package will be created.
+  -u, --use-in-feature=<option>  [default: SearchIndexChunking] Feature flag for function initialization (function
+                                 packages only).
+                                 <options: SearchIndexChunking>
 
 GLOBAL FLAGS
   --flags-dir=<value>  Import flag values from a directory.
@@ -191,7 +191,7 @@ FLAG DESCRIPTIONS
 
     The directory path where the new package will be initialized. The directory will be created if it doesn't exist.
 
-  -u, --used-in-feature=SearchIndexChunking  Feature flag for function initialization (function packages only).
+  -u, --use-in-feature=SearchIndexChunking  Feature flag for function initialization (function packages only).
 
     Configuration for which feature this function will be used in. SearchIndexChunking is the only valid option and is
     used by default if not specified.

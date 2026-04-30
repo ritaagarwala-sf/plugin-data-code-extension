@@ -124,7 +124,7 @@ describe('data-code-extension init commands', () => {
       const result = await FunctionInit.run([
         '--package-dir',
         './test-function',
-        '--used-in-feature',
+        '--use-in-feature',
         'SearchIndexChunking',
       ]);
       expect(result.codeType).to.equal('function');
@@ -176,7 +176,7 @@ describe('data-code-extension init commands', () => {
       const result = await FunctionInit.run([
         '--package-dir',
         './test-function-type',
-        '--used-in-feature',
+        '--use-in-feature',
         'SearchIndexChunking',
       ]);
       expect(result.codeType).to.equal('function');
@@ -219,12 +219,12 @@ describe('data-code-extension init commands', () => {
       expect(error).to.exist;
       if (error instanceof Error) {
         // Could fail on either missing flag
-        expect(error.message).to.match(/package-dir|used-in-feature/);
+        expect(error.message).to.match(/package-dir|use-in-feature/);
       }
     }
   });
 
-  it('uses default value for used-in-feature when not provided', async () => {
+  it('uses default value for use-in-feature when not provided', async () => {
     try {
       const result = await FunctionInit.run(['--package-dir', './test-function']);
       // Should succeed with default value
