@@ -30,11 +30,11 @@ Deploys an initialized and packaged Data Cloud code extension to a Salesforce or
 
 - Deploy a function package to the org with alias "myorg":
 
-  <%= config.bin %> data-code-extension function deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./payload --target-org myorg --function-invoke-opt UnstructuredChunking
+  <%= config.bin %> data-code-extension function deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./payload --target-org myorg
 
 - Deploy with a specific CPU size:
 
-  <%= config.bin %> data-code-extension function deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./payload --target-org myorg --cpu-size CPU_4XL --function-invoke-opt UnstructuredChunking
+  <%= config.bin %> data-code-extension function deploy --name my-package --package-version 1.0.0 --description "My package" --package-dir ./payload --target-org myorg --cpu-size CPU_4XL
 
 # info.checkingPython
 
@@ -151,14 +151,6 @@ Target Salesforce org for deployment.
 # flags.targetOrg.description
 
 The alias or username of the Salesforce org where you want to deploy the Data Cloud custom code package. The org must have Data Cloud enabled and appropriate permissions.
-
-# flags.functionInvokeOpt.summary
-
-Function invocation option (function packages only).
-
-# flags.functionInvokeOpt.description
-
-Configuration for how functions should be invoked. UnstructuredChunking is only valid option at this point
 
 # error.flagEmpty
 

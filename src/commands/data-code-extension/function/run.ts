@@ -34,11 +34,12 @@ export default class Run extends RunBase {
       required: true,
       exists: true,
     }),
-    'target-org': Flags.requiredOrg({
-      char: 'o',
-      summary: messages.getMessage('flags.targetOrg.summary'),
-      description: messages.getMessage('flags.targetOrg.description'),
+    'test-with': Flags.file({
+      char: 't',
+      summary: messages.getMessage('flags.testWith.summary'),
+      description: messages.getMessage('flags.testWith.description'),
       required: true,
+      exists: true,
     }),
     'config-file': Flags.file({
       summary: messages.getMessage('flags.configFile.summary'),

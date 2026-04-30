@@ -130,8 +130,6 @@ export abstract class DeployBase<TFlags extends BaseDeployFlags = BaseDeployFlag
     const cpuSize = flags['cpu-size'] || 'CPU_2XL';
     const network = flags.network;
 
-    const additionalFlags = this.getAdditionalFlags(flags);
-
     if (packageDir.length === 0) {
       throw new SfError(messages.getMessage('error.flagEmpty', ['package-dir']), 'InvalidFlagValue');
     }
@@ -160,8 +158,7 @@ export abstract class DeployBase<TFlags extends BaseDeployFlags = BaseDeployFlag
         packageDir,
         orgUsername,
         cpuSize,
-        network,
-        additionalFlags.functionInvokeOpt as string | undefined
+        network
       );
 
       this.log(cmdMessages.getMessage('info.deploymentComplete', [name, version]));
@@ -193,5 +190,4 @@ export abstract class DeployBase<TFlags extends BaseDeployFlags = BaseDeployFlag
 
   protected abstract getCodeType(): 'script' | 'function';
   protected abstract getMessages(): Messages<string>;
-  protected abstract getAdditionalFlags(flags: TFlags): Record<string, unknown>;
 }

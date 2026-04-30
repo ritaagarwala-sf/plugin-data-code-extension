@@ -123,7 +123,6 @@ describe('data-code-extension deploy', () => {
       expect(binaryDeployStub.firstCall.args[2]).to.equal('Test script deployment');
       expect(binaryDeployStub.firstCall.args[3]).to.equal(testDir);
       expect(binaryDeployStub.firstCall.args[5]).to.equal('CPU_2XL'); // Default CPU size
-      expect(binaryDeployStub.firstCall.args[7]).to.be.undefined; // No function-invoke-opt for scripts
     });
 
     it('should deploy with custom CPU size', async () => {
@@ -226,32 +225,11 @@ describe('data-code-extension deploy', () => {
         testDir,
         '--target-org',
         'test@example.com',
-        '--function-invoke-opt',
-        'UnstructuredChunking',
       ]);
 
       expect(sfCommandStubs.log.calledWith('Data Code Extension deployment completed successfully!')).to.be.true;
       expect(binaryDeployStub.calledOnce).to.be.true;
       expect(binaryDeployStub.firstCall.args[0]).to.equal('test-function');
-    });
-
-    it('should deploy with function-invoke-opt flag', async () => {
-      await FunctionDeploy.run([
-        '--name',
-        'test-function',
-        '--package-version',
-        '1.0.0',
-        '--description',
-        'Test function deployment',
-        '--package-dir',
-        testDir,
-        '--target-org',
-        'test@example.com',
-        '--function-invoke-opt',
-        'UnstructuredChunking',
-      ]);
-
-      expect(binaryDeployStub.firstCall.args[7]).to.equal('UnstructuredChunking');
     });
 
     it('should validate CPU size options', async () => {
@@ -292,8 +270,6 @@ describe('data-code-extension deploy', () => {
           testDir,
           '--target-org',
           'test@example.com',
-          '--function-invoke-opt',
-          'UnstructuredChunking',
         ]);
         expect.fail('Should have thrown an error');
       } catch (error) {
@@ -317,8 +293,6 @@ describe('data-code-extension deploy', () => {
           testDir,
           '--target-org',
           'test@example.com',
-          '--function-invoke-opt',
-          'UnstructuredChunking',
         ]);
         expect.fail('Should have thrown an error');
       } catch (error) {

@@ -83,15 +83,25 @@ export class DatacodeBinaryExecutor {
    *
    * @param codeType The type of code package to initialize
    * @param packageDir The directory to initialize the package in
+   * @param usedInFeature Optional feature flag (function packages only)
    * @returns Execution result with stdout, stderr, and parsed file list
    * @throws SfError if execution fails
    */
   public static async executeBinaryInit(
     codeType: 'script' | 'function',
-    packageDir: string
+    packageDir: string,
+    usedInFeature?: string
   ): Promise<DatacodeInitExecutionResult> {
     try {
-      const { stdout, stderr } = await spawnAsync('datacustomcode', ['init', '--code-type', codeType, packageDir], {
+      const args = ['init', '--code-type', codeType];
+
+      if (usedInFeature) {
+        args.push('--used-in-feature', usedInFeature);
+      }
+
+      args.push(packageDir);
+
+      const { stdout, stderr } = await spawnAsync('datacustomcode', args, {
         timeout: 30_000,
       });
 
@@ -229,7 +239,6 @@ export class DatacodeBinaryExecutor {
    * @param targetOrg The target Salesforce org username/alias
    * @param cpuSize The CPU size for the deployment
    * @param network Optional network configuration for Jupyter notebooks
-   * @param functionInvokeOpt Optional function invocation option (function packages only)
    * @returns Execution result with stdout, stderr, and deployment details
    * @throws SfError if execution fails
    */
@@ -240,8 +249,7 @@ export class DatacodeBinaryExecutor {
     packageDir: string,
     targetOrg: string,
     cpuSize: string,
-    network?: string,
-    functionInvokeOpt?: string
+    network?: string
   ): Promise<DatacodeDeployExecutionResult> {
     // Build args array for spawn (avoids shell-escaping issues and enables streaming)
     const args = [
@@ -262,10 +270,6 @@ export class DatacodeBinaryExecutor {
 
     if (network) {
       args.push('--network', network);
-    }
-
-    if (functionInvokeOpt) {
-      args.push('--function-invoke-opt', functionInvokeOpt);
     }
 
     return new Promise((resolve, reject) => {
@@ -343,7 +347,8 @@ export class DatacodeBinaryExecutor {
    * Executes datacustomcode run with the specified parameters.
    *
    * @param packageDir The package directory (positional argument)
-   * @param targetOrg The target Salesforce org username/alias
+   * @param targetOrg Optional target Salesforce org username/alias (required for scripts, not for functions)
+   * @param testWith Optional path to test.json file for function testing
    * @param configFile Optional path to a config file
    * @param dependencies Optional dependencies override
    * @returns Execution result with stdout, stderr, and parsed run output
@@ -351,11 +356,20 @@ export class DatacodeBinaryExecutor {
    */
   public static async executeBinaryRun(
     packageDir: string,
-    targetOrg: string,
+    targetOrg?: string,
+    testWith?: string,
     configFile?: string,
     dependencies?: string
   ): Promise<DatacodeRunExecutionResult> {
-    const args = ['run', '--sf-cli-org', targetOrg];
+    const args = ['run'];
+
+    if (targetOrg) {
+      args.push('--sf-cli-org', targetOrg);
+    }
+
+    if (testWith) {
+      args.push('--test-with', testWith);
+    }
 
     if (configFile) {
       args.push('--config-file', configFile);
@@ -382,7 +396,7 @@ export class DatacodeBinaryExecutor {
 
       if (errorMessage.includes('Authentication failed') || errorMessage.includes('Invalid credentials')) {
         throw new SfError(
-          messages.getMessage('error.runAuthenticationFailed', [targetOrg]),
+          messages.getMessage('error.runAuthenticationFailed', [targetOrg ?? 'target org']),
           'RunAuthenticationFailed',
           messages.getMessages('actions.runAuthenticationFailed')
         );

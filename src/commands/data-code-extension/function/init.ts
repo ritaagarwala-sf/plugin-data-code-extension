@@ -15,13 +15,17 @@
  */
 import { Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { InitBase } from '../../../base/initBase.js';
+import { InitBase, type BaseInitFlags } from '../../../base/initBase.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension', 'init');
 
+export type FunctionInitFlags = BaseInitFlags & {
+  'used-in-feature': string;
+};
+
 // eslint-disable-next-line sf-plugin/only-extend-SfCommand
-export default class Init extends InitBase {
+export default class Init extends InitBase<FunctionInitFlags> {
   public static readonly state = 'beta';
   public static readonly summary = messages.getMessage('summary', ['function']);
   public static readonly description = messages.getMessage('description');
@@ -36,6 +40,15 @@ export default class Init extends InitBase {
       required: true,
       exists: false, // Allow non-existing directories (will be created)
     }),
+    // Function-specific flag
+    'used-in-feature': Flags.string({
+      char: 'u',
+      summary: messages.getMessage('flags.usedInFeature.summary'),
+      description: messages.getMessage('flags.usedInFeature.description'),
+      options: ['SearchIndexChunking'],
+      default: 'SearchIndexChunking',
+      required: false,
+    }),
   };
 
   // eslint-disable-next-line class-methods-use-this
@@ -46,5 +59,12 @@ export default class Init extends InitBase {
   // eslint-disable-next-line class-methods-use-this
   protected getMessages(): Messages<string> {
     return messages;
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  protected getAdditionalFlags(flags: FunctionInitFlags): Record<string, unknown> {
+    return {
+      usedInFeature: flags['used-in-feature'],
+    };
   }
 }
