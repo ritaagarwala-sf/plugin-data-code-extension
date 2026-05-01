@@ -98,7 +98,7 @@ export abstract class RunBase extends SfCommand<RunResult> {
         binaryInfo,
         codeType,
         packageDir,
-        targetOrg: orgUsername ?? '',
+        targetOrg: orgUsername,
         status: executionResult.status,
         output: executionResult.output,
         executionResult,
