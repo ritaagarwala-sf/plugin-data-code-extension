@@ -86,20 +86,18 @@ Deploy a Data Code Extension function package to a Salesforce org.
 
 ```
 USAGE
-  $ sf data-code-extension function deploy -n <value> --package-version <value> -d <value> -p <value> -o <value> --function-invoke-opt
-    UnstructuredChunking [--flags-dir <value>] [--network <value>] [--cpu-size CPU_L|CPU_XL|CPU_2XL|CPU_4XL]
+  $ sf data-code-extension function deploy -n <value> --package-version <value> -d <value> -p <value> -o <value> [--flags-dir <value>]
+    [--network <value>] [--cpu-size CPU_L|CPU_XL|CPU_2XL|CPU_4XL]
 
 FLAGS
-  -d, --description=<value>           (required) Description of the package.
-  -n, --name=<value>                  (required) Name of the package to deploy.
-  -o, --target-org=<value>            (required) Target Salesforce org for deployment.
-  -p, --package-dir=<value>           (required) Directory containing the packaged code.
-      --cpu-size=<option>             [default: CPU_2XL] CPU size for the deployment.
-                                      <options: CPU_L|CPU_XL|CPU_2XL|CPU_4XL>
-      --function-invoke-opt=<option>  (required) Function invocation option (function packages only).
-                                      <options: UnstructuredChunking>
-      --network=<value>               Network configuration for Jupyter notebooks.
-      --package-version=<value>       (required) Version of the package to deploy.
+  -d, --description=<value>      (required) Description of the package.
+  -n, --name=<value>             (required) Name of the package to deploy.
+  -o, --target-org=<value>       (required) Target Salesforce org for deployment.
+  -p, --package-dir=<value>      (required) Directory containing the packaged code.
+      --cpu-size=<option>        [default: CPU_2XL] CPU size for the deployment.
+                                 <options: CPU_L|CPU_XL|CPU_2XL|CPU_4XL>
+      --network=<value>          Network configuration for Jupyter notebooks.
+      --package-version=<value>  (required) Version of the package to deploy.
 
 GLOBAL FLAGS
   --flags-dir=<value>  Import flag values from a directory.
@@ -115,12 +113,12 @@ EXAMPLES
   Deploy a function package to the org with alias "myorg":
 
     $ sf data-code-extension function deploy --name my-package --package-version 1.0.0 --description "My package" \
-      --package-dir ./payload --target-org myorg --function-invoke-opt UnstructuredChunking
+      --package-dir ./payload --target-org myorg
 
   Deploy with a specific CPU size:
 
     $ sf data-code-extension function deploy --name my-package --package-version 1.0.0 --description "My package" \
-      --package-dir ./payload --target-org myorg --cpu-size CPU_4XL --function-invoke-opt UnstructuredChunking
+      --package-dir ./payload --target-org myorg --cpu-size CPU_4XL
 
 FLAG DESCRIPTIONS
   -d, --description=<value>  Description of the package.
@@ -148,10 +146,6 @@ FLAG DESCRIPTIONS
     The CPU allocation size for your deployed package. Options are: CPU_L (small), CPU_XL (large), CPU_2XL (extra large,
     default), CPU_4XL (maximum). Higher CPU sizes provide more processing power but may have quota implications.
 
-  --function-invoke-opt=UnstructuredChunking  Function invocation option (function packages only).
-
-    Configuration for how functions should be invoked. UnstructuredChunking is only valid option at this point
-
   --network=<value>  Network configuration for Jupyter notebooks.
 
     Optional network configuration setting for packages that include Jupyter notebooks. Common values include 'host' for
@@ -171,10 +165,13 @@ Initialize the Data Code Extension function package.
 
 ```
 USAGE
-  $ sf data-code-extension function init -p <value> [--flags-dir <value>]
+  $ sf data-code-extension function init -p <value> [--flags-dir <value>] [-u SearchIndexChunking]
 
 FLAGS
-  -p, --package-dir=<value>  (required) Directory path where the package will be created.
+  -p, --package-dir=<value>      (required) Directory path where the package will be created.
+  -u, --use-in-feature=<option>  [default: SearchIndexChunking] Feature flag for function initialization (function
+                                 packages only).
+                                 <options: SearchIndexChunking>
 
 GLOBAL FLAGS
   --flags-dir=<value>  Import flag values from a directory.
@@ -193,6 +190,11 @@ FLAG DESCRIPTIONS
   -p, --package-dir=<value>  Directory path where the package will be created.
 
     The directory path where the new package will be initialized. The directory will be created if it doesn't exist.
+
+  -u, --use-in-feature=SearchIndexChunking  Feature flag for function initialization (function packages only).
+
+    Configuration for which feature this function will be used in. SearchIndexChunking is the only valid option and is
+    used by default if not specified.
 ```
 
 _See code: [src/commands/data-code-extension/function/init.ts](https://github.com/salesforcecli/plugin-data-code-extension/blob/0.1.5/src/commands/data-code-extension/function/init.ts)_
@@ -203,12 +205,12 @@ Run a Data Code Extension function package locally using data from your Salesfor
 
 ```
 USAGE
-  $ sf data-code-extension function run -e <value> -o <value> [--flags-dir <value>] [--config-file <value>]
+  $ sf data-code-extension function run -e <value> -t <value> [--flags-dir <value>] [--config-file <value>]
   [--dependencies <value>]
 
 FLAGS
   -e, --entrypoint=<value>    (required) Entrypoint file for the package to run.
-  -o, --target-org=<value>    (required) Target Salesforce org to run against.
+  -t, --test-with=<value>     (required) Path to test.json file to test Data Code Extension function
       --config-file=<value>   Path to a config file.
       --dependencies=<value>  Dependencies override for the run.
 
@@ -222,25 +224,24 @@ DESCRIPTION
   before running. Supports both script and function packages with optional config file and dependencies overrides.
 
 EXAMPLES
-  Run a function package against the org with alias "myorg":
+  Run a function package:
 
-    $ sf data-code-extension function run --entrypoint ./my-function-package/payload/entrypoint.py --target-org \
-      myorg
+    $ sf data-code-extension function run --entrypoint ./my-function-package/payload/entrypoint.py --test-with \
+      ./my-function-package/payload/tests/test.json
 
   Run with a custom config file:
 
-    $ sf data-code-extension function run --entrypoint ./my-function-package/payload/entrypoint.py --target-org \
-      myorg --config-file ./my-function-package/payload/config.json
+    $ sf data-code-extension function run --entrypoint ./my-function-package/payload/entrypoint.py --test-with \
+      ./my-function-package/payload/tests/test.json --config-file ./my-function-package/payload/config.json
 
 FLAG DESCRIPTIONS
   -e, --entrypoint=<value>  Entrypoint file for the package to run.
 
     The path to the entrypoint file of your initialized Data Cloud custom code package.
 
-  -o, --target-org=<value>  Target Salesforce org to run against.
+  -t, --test-with=<value>  Path to test.json file to test Data Code Extension function
 
-    The alias or username of the Salesforce org where you want to run the Data Cloud custom code package. The org must
-    have Data Cloud enabled and appropriate permissions.
+    Path to a JSON file that provides input request for the function.
 
   --config-file=<value>  Path to a config file.
 

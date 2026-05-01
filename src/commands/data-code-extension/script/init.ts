@@ -15,7 +15,7 @@
  */
 import { Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { InitBase } from '../../../base/initBase.js';
+import { InitBase, type BaseInitFlags } from '../../../base/initBase.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension', 'init');
@@ -46,5 +46,10 @@ export default class Init extends InitBase {
   // eslint-disable-next-line class-methods-use-this
   protected getMessages(): Messages<string> {
     return messages;
+  }
+
+  // eslint-disable-next-line class-methods-use-this, @typescript-eslint/no-unused-vars
+  protected getAdditionalFlags(flags: BaseInitFlags): Record<string, unknown> {
+    return {};
   }
 }

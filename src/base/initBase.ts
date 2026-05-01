@@ -28,14 +28,16 @@ export type InitResult = SharedResultProps & {
 };
 
 // eslint-disable-next-line sf-plugin/command-summary, sf-plugin/command-example
-export abstract class InitBase extends SfCommand<InitResult> {
+export abstract class InitBase<TFlags extends BaseInitFlags = BaseInitFlags> extends SfCommand<InitResult> {
   public static enableJsonFlag = false;
 
   public async run(): Promise<InitResult> {
-    const { flags } = (await this.parse(this.constructor as typeof InitBase)) as unknown as { flags: BaseInitFlags };
+    const { flags } = (await this.parse(this.constructor as typeof InitBase)) as unknown as { flags: TFlags };
     const codeType = this.getCodeType();
     const messages = this.getMessages();
     const packageDir = flags['package-dir'];
+
+    const additionalFlags = this.getAdditionalFlags(flags);
 
     try {
       const { pythonInfo, packageInfo, binaryInfo } = await checkEnvironment(
@@ -45,7 +47,11 @@ export abstract class InitBase extends SfCommand<InitResult> {
       );
 
       this.spinner.start(messages.getMessage('info.executingInit'));
-      const executionResult = await DatacodeBinaryExecutor.executeBinaryInit(codeType, packageDir);
+      const executionResult = await DatacodeBinaryExecutor.executeBinaryInit(
+        codeType,
+        packageDir,
+        additionalFlags.useInFeature as string | undefined
+      );
 
       this.spinner.stop();
       this.log(messages.getMessage('info.initExecuted', [packageDir]));
@@ -77,4 +83,5 @@ export abstract class InitBase extends SfCommand<InitResult> {
 
   protected abstract getCodeType(): 'script' | 'function';
   protected abstract getMessages(): Messages<string>;
+  protected abstract getAdditionalFlags(flags: TFlags): Record<string, unknown>;
 }

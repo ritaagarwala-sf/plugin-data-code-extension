@@ -121,7 +121,12 @@ describe('data-code-extension init commands', () => {
 
   it('runs function init command successfully', async () => {
     try {
-      const result = await FunctionInit.run(['--package-dir', './test-function']);
+      const result = await FunctionInit.run([
+        '--package-dir',
+        './test-function',
+        '--use-in-feature',
+        'SearchIndexChunking',
+      ]);
       expect(result.codeType).to.equal('function');
       expect(result.packageDir).to.equal('./test-function');
       expect(result.success).to.be.true;
@@ -168,7 +173,12 @@ describe('data-code-extension init commands', () => {
 
   it('function init returns codeType as function', async () => {
     try {
-      const result = await FunctionInit.run(['--package-dir', './test-function-type']);
+      const result = await FunctionInit.run([
+        '--package-dir',
+        './test-function-type',
+        '--use-in-feature',
+        'SearchIndexChunking',
+      ]);
       expect(result.codeType).to.equal('function');
       expect(result.packageDir).to.equal('./test-function-type');
     } catch (error) {
@@ -208,7 +218,32 @@ describe('data-code-extension init commands', () => {
     } catch (error) {
       expect(error).to.exist;
       if (error instanceof Error) {
-        expect(error.message).to.include('package-dir');
+        // Could fail on either missing flag
+        expect(error.message).to.match(/package-dir|use-in-feature/);
+      }
+    }
+  });
+
+  it('uses default value for use-in-feature when not provided', async () => {
+    try {
+      const result = await FunctionInit.run(['--package-dir', './test-function']);
+      // Should succeed with default value
+      expect(result.codeType).to.equal('function');
+      expect(result.success).to.be.true;
+    } catch (error) {
+      // Handle case where Python is not installed
+      if (error instanceof Error) {
+        expect(error.name).to.be.oneOf([
+          'PythonNotFound',
+          'PythonVersionMismatch',
+          'PipNotFound',
+          'PackageNotInstalled',
+          'BinaryNotFound',
+          'BinaryNotExecutable',
+          'InitPermissionDenied',
+          'InitDirectoryExists',
+          'InitExecutionFailed',
+        ]);
       }
     }
   });

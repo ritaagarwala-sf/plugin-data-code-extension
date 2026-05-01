@@ -21,13 +21,14 @@ import { type SharedResultProps } from './types.js';
 
 export type BaseRunFlags = {
   entrypoint: string;
-  'target-org': Org;
+  'target-org'?: Org;
+  'test-with'?: string;
   'config-file'?: string;
   dependencies?: string;
 };
 
 export type RunResult = SharedResultProps & {
-  targetOrg: string;
+  targetOrg?: string;
   status?: string;
   output?: string;
   executionResult?: DatacodeRunExecutionResult;
@@ -44,6 +45,7 @@ export abstract class RunBase extends SfCommand<RunResult> {
 
     const packageDir = flags.entrypoint;
     const targetOrg = flags['target-org'];
+    const testWith = flags['test-with'];
     const configFile = flags['config-file'];
     const dependencies = flags.dependencies;
 
@@ -54,19 +56,24 @@ export abstract class RunBase extends SfCommand<RunResult> {
         messages
       );
 
-      const orgUsername = targetOrg.getUsername() ?? 'target org';
-      this.spinner.start(messages.getMessage('info.authenticating', [orgUsername]));
+      let orgUsername: string | undefined;
 
-      const connection = targetOrg.getConnection();
-      await connection.refreshAuth();
+      if (targetOrg) {
+        orgUsername = targetOrg.getUsername() ?? 'target org';
+        this.spinner.start(messages.getMessage('info.authenticating', [orgUsername]));
 
-      this.spinner.stop();
-      this.log(messages.getMessage('info.authenticated', [orgUsername]));
+        const connection = targetOrg.getConnection();
+        await connection.refreshAuth();
+
+        this.spinner.stop();
+        this.log(messages.getMessage('info.authenticated', [orgUsername]));
+      }
 
       this.spinner.start(messages.getMessage('info.runningPackage'));
       const executionResult = await DatacodeBinaryExecutor.executeBinaryRun(
         packageDir,
         orgUsername,
+        testWith,
         configFile,
         dependencies
       );

@@ -18,13 +18,13 @@ Executes an initialized Data Cloud custom code package against a Salesforce org.
 
 # examples.function
 
-- Run a function package against the org with alias "myorg":
+- Run a function package:
 
-  <%= config.bin %> data-code-extension function run --entrypoint ./my-function-package/payload/entrypoint.py --target-org myorg
+  <%= config.bin %> data-code-extension function run --entrypoint ./my-function-package/payload/entrypoint.py --test-with ./my-function-package/payload/tests/test.json
 
 - Run with a custom config file:
 
-  <%= config.bin %> data-code-extension function run --entrypoint ./my-function-package/payload/entrypoint.py --target-org myorg --config-file ./my-function-package/payload/config.json
+  <%= config.bin %> data-code-extension function run --entrypoint ./my-function-package/payload/entrypoint.py --test-with ./my-function-package/payload/tests/tests.json --config-file ./my-function-package/payload/config.json
 
 # info.checkingPython
 
@@ -97,6 +97,14 @@ Target Salesforce org to run against.
 # flags.targetOrg.description
 
 The alias or username of the Salesforce org where you want to run the Data Cloud custom code package. The org must have Data Cloud enabled and appropriate permissions.
+
+# flags.testWith.summary
+
+Path to test.json file to test Data Code Extension function
+
+# flags.testWith.description
+
+Path to a JSON file that provides input request for the function.
 
 # flags.configFile.summary
 

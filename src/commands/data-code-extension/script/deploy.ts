@@ -39,9 +39,4 @@ export default class Deploy extends DeployBase {
   protected getMessages(): Messages<string> {
     return messages;
   }
-
-  // eslint-disable-next-line class-methods-use-this
-  protected getAdditionalFlags(): Record<string, unknown> {
-    return {};
-  }
 }
