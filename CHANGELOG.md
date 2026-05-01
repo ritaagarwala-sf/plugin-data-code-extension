@@ -1,3 +1,33 @@
+# [1.0.0](https://github.com/salesforcecli/plugin-data-code-extension/compare/0.1.5...1.0.0) (2026-05-01)
+
+- feat!: restructure function-specific flags for CLI ([b4772c5](https://github.com/salesforcecli/plugin-data-code-extension/commit/b4772c52b5425775e2409558ceb92d9a280e1975))
+- feat!: restructure function-specific flags for CLI ([17c3e35](https://github.com/salesforcecli/plugin-data-code-extension/commit/17c3e35b932afc7d8c7858fd63c6c11fd224642d))
+- feat!: restructure function-specific flags for CLI ([fbd96ad](https://github.com/salesforcecli/plugin-data-code-extension/commit/fbd96ad619a0e2adea6fe0e62e7017e0ab36b622))
+- feat!: restructure function-specific flags for CLI ([43b3cfc](https://github.com/salesforcecli/plugin-data-code-extension/commit/43b3cfcd9f034ff694476f37c82fb6b62355b9ca))
+- feat!: restructure function-specific flags for CLI ([8f43b76](https://github.com/salesforcecli/plugin-data-code-extension/commit/8f43b766ebe687227ad1ce0ff3c1ea22eccc43d8))
+
+### BREAKING CHANGES
+
+- Command signatures changed for function init, deploy, and run
+
+@W-22278901
+
+- Command signatures changed for function init, deploy, and run
+
+@W-22278901
+
+- Command signatures changed for function init, deploy, and run
+
+@W-22278901
+
+- Command signatures changed for function init, deploy, and run
+
+@W-22278901
+
+- Command signatures changed for function init, deploy, and run
+
+@W-22278901
+
 ## [0.1.5](https://github.com/salesforcecli/plugin-data-code-extension/compare/0.1.4...0.1.5) (2026-04-14)
 
 ### Bug Fixes
