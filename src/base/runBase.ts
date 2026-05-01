@@ -28,7 +28,7 @@ export type BaseRunFlags = {
 };
 
 export type RunResult = SharedResultProps & {
-  targetOrg: string;
+  targetOrg?: string;
   status?: string;
   output?: string;
   executionResult?: DatacodeRunExecutionResult;
