@@ -22,6 +22,10 @@ Executes an initialized Data Cloud custom code package against a Salesforce org.
 
   <%= config.bin %> data-code-extension function run --entrypoint ./my-function-package/payload/entrypoint.py --test-with ./my-function-package/payload/tests/test.json
 
+- Run with a target org:
+
+  <%= config.bin %> data-code-extension function run --entrypoint ./my-function-package/payload/entrypoint.py --test-with ./my-function-package/payload/tests/test.json --target-org myorg
+
 - Run with a custom config file:
 
   <%= config.bin %> data-code-extension function run --entrypoint ./my-function-package/payload/entrypoint.py --test-with ./my-function-package/payload/tests/tests.json --config-file ./my-function-package/payload/config.json

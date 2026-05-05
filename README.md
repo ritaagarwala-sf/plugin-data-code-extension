@@ -205,7 +205,7 @@ Run a Data Code Extension function package locally using data from your Salesfor
 
 ```
 USAGE
-  $ sf data-code-extension function run -e <value> -t <value> [--flags-dir <value>] [--config-file <value>]
+  $ sf data-code-extension function run -e <value> -t <value> [--flags-dir <value>] [--target-org <value>] [--config-file <value>]
   [--dependencies <value>]
 
 FLAGS
@@ -213,6 +213,7 @@ FLAGS
   -t, --test-with=<value>     (required) Path to test.json file to test Data Code Extension function
       --config-file=<value>   Path to a config file.
       --dependencies=<value>  Dependencies override for the run.
+      --target-org=<value>    Target Salesforce org to run against.
 
 GLOBAL FLAGS
   --flags-dir=<value>  Import flag values from a directory.
@@ -229,6 +230,11 @@ EXAMPLES
     $ sf data-code-extension function run --entrypoint ./my-function-package/payload/entrypoint.py --test-with \
       ./my-function-package/payload/tests/test.json
 
+  Run with a target org:
+
+    $ sf data-code-extension function run --entrypoint ./my-function-package/payload/entrypoint.py --test-with \
+      ./my-function-package/payload/tests/test.json --target-org myorg
+
   Run with a custom config file:
 
     $ sf data-code-extension function run --entrypoint ./my-function-package/payload/entrypoint.py --test-with \
@@ -238,6 +244,10 @@ FLAG DESCRIPTIONS
   -e, --entrypoint=<value>  Entrypoint file for the package to run.
 
     The path to the entrypoint file of your initialized Data Cloud custom code package.
+
+  --target-org=<value>  Target Salesforce org to run against.
+
+    Optional username or alias for the target Salesforce org. If provided, the function will run with access to the org's data.
 
   -t, --test-with=<value>  Path to test.json file to test Data Code Extension function
 
@@ -559,7 +569,7 @@ EXAMPLES
 
   Scan without updating the requirements.txt file:
 
-    $ sf data-code-extension script scan --entrypoint ./my-script-package/payload/entrypoint.py --no-requirements
+     sf data-code-extension script scan --entrypoint ./my-script-package/payload/entrypoint.py --no-requirements
 
 FLAG DESCRIPTIONS
   -d, --dry-run  Preview changes without modifying any files.
