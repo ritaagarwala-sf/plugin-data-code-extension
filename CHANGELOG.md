@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/salesforcecli/plugin-data-code-extension/compare/1.0.0...1.1.0) (2026-05-05)
+
+### Features
+
+- add optional target-org support to function run ([f37f236](https://github.com/salesforcecli/plugin-data-code-extension/commit/f37f2364d64762b9df7044fb94269f10bb297fbd))
+- add optional target-org support to function run ([d3f8186](https://github.com/salesforcecli/plugin-data-code-extension/commit/d3f81864e26438aa0ba5c494cabb22c91249e8b6))
+
 # [1.0.0](https://github.com/salesforcecli/plugin-data-code-extension/compare/0.1.5...1.0.0) (2026-05-01)
 
 - feat!: restructure function-specific flags for CLI ([b4772c5](https://github.com/salesforcecli/plugin-data-code-extension/commit/b4772c52b5425775e2409558ceb92d9a280e1975))
