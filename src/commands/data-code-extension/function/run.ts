@@ -52,6 +52,11 @@ export default class Run extends RunBase {
       description: messages.getMessage('flags.dependencies.description'),
       required: false,
     }),
+    'target-org': Flags.optionalOrg({
+      char: undefined,
+      summary: messages.getMessage('flags.targetOrg.summary.function'),
+      description: messages.getMessage('flags.targetOrg.description.function'),
+    }),
   };
 
   // eslint-disable-next-line class-methods-use-this

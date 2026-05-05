@@ -205,7 +205,7 @@ Run a Data Code Extension function package locally using data from your Salesfor
 
 ```
 USAGE
-  $ sf data-code-extension function run -e <value> -t <value> [--flags-dir <value>] [--config-file <value>]
+  $ sf data-code-extension function run -e <value> -t <value> [--flags-dir <value>] [--target-org <value>] [--config-file <value>]
   [--dependencies <value>]
 
 FLAGS
@@ -213,6 +213,7 @@ FLAGS
   -t, --test-with=<value>     (required) Path to test.json file to test Data Code Extension function
       --config-file=<value>   Path to a config file.
       --dependencies=<value>  Dependencies override for the run.
+      --target-org=<value>    Target Salesforce org to run against.
 
 GLOBAL FLAGS
   --flags-dir=<value>  Import flag values from a directory.
@@ -229,6 +230,11 @@ EXAMPLES
     $ sf data-code-extension function run --entrypoint ./my-function-package/payload/entrypoint.py --test-with \
       ./my-function-package/payload/tests/test.json
 
+  Run with a target org:
+
+    $ sf data-code-extension function run --entrypoint ./my-function-package/payload/entrypoint.py --test-with \
+      ./my-function-package/payload/tests/test.json --target-org myorg
+
   Run with a custom config file:
 
     $ sf data-code-extension function run --entrypoint ./my-function-package/payload/entrypoint.py --test-with \
@@ -242,6 +248,12 @@ FLAG DESCRIPTIONS
   -t, --test-with=<value>  Path to test.json file to test Data Code Extension function
 
     Path to a JSON file that provides input request for the function.
+
+  --target-org=<value>  Target Salesforce org to run against.
+
+    Optional The alias or username of the Salesforce org where you want to run the Data Cloud code extension package.
+    Required for functions testing with callouts to generative and predictive models registered in your org. The org
+    must have Data Cloud enabled and appropriate permissions.
 
   --config-file=<value>  Path to a config file.
 
