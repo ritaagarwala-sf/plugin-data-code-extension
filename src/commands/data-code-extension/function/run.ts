@@ -54,9 +54,8 @@ export default class Run extends RunBase {
     }),
     'target-org': Flags.optionalOrg({
       char: undefined,
-      summary: messages.getMessage('flags.targetOrg.summary'),
-      description: messages.getMessage('flags.targetOrg.description'),
-      required: false,
+      summary: messages.getMessage('flags.targetOrg.summary.function'),
+      description: messages.getMessage('flags.targetOrg.description.function'),
     }),
   };
 

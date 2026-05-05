@@ -245,13 +245,15 @@ FLAG DESCRIPTIONS
 
     The path to the entrypoint file of your initialized Data Cloud custom code package.
 
-  --target-org=<value>  Target Salesforce org to run against.
-
-    Optional username or alias for the target Salesforce org. If provided, the function will run with access to the org's data.
-
   -t, --test-with=<value>  Path to test.json file to test Data Code Extension function
 
     Path to a JSON file that provides input request for the function.
+
+  --target-org=<value>  Target Salesforce org to run against.
+
+    Optional The alias or username of the Salesforce org where you want to run the Data Cloud code extension package.
+    Required for functions testing with callouts to generative and predictive models registered in your org. The org
+    must have Data Cloud enabled and appropriate permissions.
 
   --config-file=<value>  Path to a config file.
 
@@ -569,7 +571,7 @@ EXAMPLES
 
   Scan without updating the requirements.txt file:
 
-     sf data-code-extension script scan --entrypoint ./my-script-package/payload/entrypoint.py --no-requirements
+    $ sf data-code-extension script scan --entrypoint ./my-script-package/payload/entrypoint.py --no-requirements
 
 FLAG DESCRIPTIONS
   -d, --dry-run  Preview changes without modifying any files.

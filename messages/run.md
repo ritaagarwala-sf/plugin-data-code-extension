@@ -102,6 +102,14 @@ Target Salesforce org to run against.
 
 The alias or username of the Salesforce org where you want to run the Data Cloud custom code package. The org must have Data Cloud enabled and appropriate permissions.
 
+# flags.targetOrg.summary.function
+
+Target Salesforce org to run against.
+
+# flags.targetOrg.description.function
+
+Optional. The alias or username of the Salesforce org where you want to run the Data Cloud code extension package. Required for functions testing with callouts to generative and predictive models registered in your org. The org must have Data Cloud enabled and appropriate permissions.
+
 # flags.testWith.summary
 
 Path to test.json file to test Data Code Extension function
