@@ -275,7 +275,7 @@ export class DatacodeBinaryExecutor {
     return new Promise((resolve, reject) => {
       debug('deploy spawn: datacustomcode %o', args);
       const child = spawn('datacustomcode', args, {
-        timeout: 300_000,
+        timeout: 600_000,
         env: { ...process.env, PYTHONUNBUFFERED: '1' },
       });
 

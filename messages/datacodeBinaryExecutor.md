@@ -52,6 +52,7 @@ Failed to deploy package '%s': %s
 - Check the datacustomcode binary is properly installed
 - Review the error message for specific issues
 - Ensure the package is properly initialized and zipped
+- Check the UI. The failure may have occurred when polling status
 
 # error.runAuthenticationFailed
 
