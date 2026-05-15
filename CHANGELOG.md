@@ -1,3 +1,9 @@
+## [1.1.1](https://github.com/salesforcecli/plugin-data-code-extension/compare/1.1.0...1.1.1) (2026-05-15)
+
+### Bug Fixes
+
+- increased polling timeout to 10 minutes ([03a1961](https://github.com/salesforcecli/plugin-data-code-extension/commit/03a1961e8fb61f08371e299240c55e7cb2d25cee))
+
 # [1.1.0](https://github.com/salesforcecli/plugin-data-code-extension/compare/1.0.0...1.1.0) (2026-05-05)
 
 ### Features
