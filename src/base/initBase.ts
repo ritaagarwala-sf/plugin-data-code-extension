@@ -15,7 +15,7 @@
  */
 import { SfCommand } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { DatacodeBinaryExecutor, type DatacodeInitExecutionResult } from '../utils/datacodeBinaryExecutor.js';
+import { executeNativeInit, type NativeInitResult } from '../utils/nativeInit.js';
 import { checkEnvironment } from '../utils/environmentChecker.js';
 import { type SharedResultProps } from './types.js';
 
@@ -24,7 +24,7 @@ export type BaseInitFlags = {
 };
 
 export type InitResult = SharedResultProps & {
-  executionResult?: DatacodeInitExecutionResult;
+  executionResult?: NativeInitResult;
 };
 
 // eslint-disable-next-line sf-plugin/command-summary, sf-plugin/command-example
@@ -47,20 +47,20 @@ export abstract class InitBase<TFlags extends BaseInitFlags = BaseInitFlags> ext
       );
 
       this.spinner.start(messages.getMessage('info.executingInit'));
-      const executionResult = await DatacodeBinaryExecutor.executeBinaryInit(
+      const executionResult = await executeNativeInit({
         codeType,
         packageDir,
-        additionalFlags.useInFeature as string | undefined
-      );
+        pythonPackageLocation: packageInfo.location,
+        pythonPackageVersion: packageInfo.version,
+        useInFeature: additionalFlags.useInFeature as string | undefined,
+      });
 
       this.spinner.stop();
       this.log(messages.getMessage('info.initExecuted', [packageDir]));
 
-      if (executionResult.filesCreated && executionResult.filesCreated.length > 0) {
-        executionResult.filesCreated.forEach((file) => {
-          this.log(messages.getMessage('info.fileCreated', [file]));
-        });
-      }
+      executionResult.filesCreated.forEach((file) => {
+        this.log(messages.getMessage('info.fileCreated', [file]));
+      });
 
       return {
         success: true,

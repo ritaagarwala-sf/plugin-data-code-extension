@@ -1,24 +1,22 @@
-# error.initExecutionFailed
+# error.initTemplateNotFound
 
-Failed to initialize package at '%s': %s
+Could not locate the datacustomcode init template at '%s'.
 
-# actions.initExecutionFailed
+# actions.initTemplateNotFound
 
-- Verify the datacustomcode binary is properly installed
-- Check that all required dependencies are installed
-- Run 'datacustomcode version' to verify the binary works
-- Check the error message for specific issues
+- Verify the salesforce-data-customcode Python package is installed and up to date
+- Run 'pip show salesforce-data-customcode' to confirm the install location
+- Reinstall with 'pip install --upgrade salesforce-data-customcode' if the templates directory is missing
 
-# error.scanExecutionFailed
+# error.scanEntrypointMissing
 
-Failed to scan package at '%s': %s
+Entrypoint file not found at '%s'.
 
-# actions.scanExecutionFailed
+# actions.scanEntrypointMissing
 
-- Verify the datacustomcode binary is properly installed
-- Check that the package directory contains valid Python files
-- Run 'datacustomcode version' to verify the binary works
-- Check the error message for specific issues
+- Verify the entrypoint path is correct
+- Run 'init' first if the package has not been initialized
+- Use the default entrypoint path: payload/entrypoint.py
 
 # error.zipExecutionFailed
 

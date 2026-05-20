@@ -61,14 +61,10 @@ describe('data-code-extension init commands', () => {
 
       // Check execution result if present (when all prerequisites are met)
       if (result.executionResult) {
-        expect(result.executionResult).to.have.property('stdout');
-        expect(result.executionResult).to.have.property('stderr');
-        expect(result.executionResult).to.have.property('projectPath');
-        expect(result.executionResult.projectPath).to.equal('./test-dir');
-        // filesCreated is optional but should be an array if present
-        if (result.executionResult.filesCreated) {
-          expect(result.executionResult.filesCreated).to.be.an('array');
-        }
+        expect(result.executionResult).to.have.property('configPath');
+        expect(result.executionResult.configPath).to.match(/test-dir.*config\.json$/);
+        expect(result.executionResult.filesCreated).to.be.an('array');
+        expect(result.executionResult.filesCreated).to.include('./test-dir');
       }
 
       expect(result.message).to.be.a('string');
@@ -90,7 +86,8 @@ describe('data-code-extension init commands', () => {
           'BinaryNotExecutable',
           'InitPermissionDenied',
           'InitDirectoryExists',
-          'InitExecutionFailed',
+          'InitTemplateNotFound',
+          'InitInvalidEntrypoint',
         ]);
         expect(error.message).to.be.a('string');
         if ('actions' in error && error.actions) {
@@ -142,7 +139,8 @@ describe('data-code-extension init commands', () => {
           'BinaryNotExecutable',
           'InitPermissionDenied',
           'InitDirectoryExists',
-          'InitExecutionFailed',
+          'InitTemplateNotFound',
+          'InitInvalidEntrypoint',
         ]);
       }
     }
@@ -165,7 +163,8 @@ describe('data-code-extension init commands', () => {
           'BinaryNotExecutable',
           'InitPermissionDenied',
           'InitDirectoryExists',
-          'InitExecutionFailed',
+          'InitTemplateNotFound',
+          'InitInvalidEntrypoint',
         ]);
       }
     }
@@ -193,7 +192,8 @@ describe('data-code-extension init commands', () => {
           'BinaryNotExecutable',
           'InitPermissionDenied',
           'InitDirectoryExists',
-          'InitExecutionFailed',
+          'InitTemplateNotFound',
+          'InitInvalidEntrypoint',
         ]);
       }
     }
@@ -242,7 +242,8 @@ describe('data-code-extension init commands', () => {
           'BinaryNotExecutable',
           'InitPermissionDenied',
           'InitDirectoryExists',
-          'InitExecutionFailed',
+          'InitTemplateNotFound',
+          'InitInvalidEntrypoint',
         ]);
       }
     }
