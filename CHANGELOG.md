@@ -1,3 +1,9 @@
+# [1.2.0](https://github.com/salesforcecli/plugin-data-code-extension/compare/1.1.1...1.2.0) (2026-05-28)
+
+### Features
+
+- migrate init and scan from python spawn to native typescript ([b43f956](https://github.com/salesforcecli/plugin-data-code-extension/commit/b43f95634217b5d53eef5f54bda09be271fb43c5))
+
 ## [1.1.1](https://github.com/salesforcecli/plugin-data-code-extension/compare/1.1.0...1.1.1) (2026-05-15)
 
 ### Bug Fixes
