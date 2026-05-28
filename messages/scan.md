@@ -34,30 +34,6 @@ Scans Python files in an initialized Data Code Extension package directory to id
 
   <%= config.bin %> data-code-extension function scan --entrypoint ./my-function-package/payload/entrypoint.py --no-requirements
 
-# info.checkingPython
-
-Checking Python version...
-
-# info.pythonFound
-
-Python %s found at '%s'
-
-# info.checkingPackages
-
-Checking required Python packages...
-
-# info.packageFound
-
-Package '%s' version %s found
-
-# info.checkingBinary
-
-Checking datacustomcode binary...
-
-# info.binaryFound
-
-Datacustomcode binary version %s found
-
 # info.executingScan
 
 Scanning package for permissions and dependencies...
@@ -65,14 +41,6 @@ Scanning package for permissions and dependencies...
 # info.scanExecuted
 
 Package scanned successfully in '%s'
-
-# info.permissionFound
-
-Permission required: %s
-
-# info.requirementFound
-
-Dependency found: %s
 
 # info.fileScanned
 
@@ -82,59 +50,9 @@ Scanned: %s
 
 Package scan completed successfully!
 
-# info.scanSuccess
-
-Data Code Extension scan completed successfully!
-
 # info.dryRunNotice
 
 DRY RUN: No files were modified. Remove --dry-run flag to apply changes.
-
-# error.scanFailed
-
-Failed to scan Data Code Extension package
-
-# error.configNotFound
-
-Config file not found at '%s'
-
-# error.notInPackageDir
-
-Current directory is not an initialized Data Code Extension package. Run 'init' first.
-
-# error.scanPermissionDenied
-
-Permission denied when scanning package at '%s'
-
-# error.scanExecutionFailed
-
-Failed to scan package at '%s': %s
-
-# actions.configNotFound
-
-- Verify the config file path is correct
-- Check if you're in the right directory
-- Run 'init' command first if package is not initialized
-- Use default entrypoint path: payload/entrypoint.py
-
-# actions.notInPackageDir
-
-- Change to an initialized package directory
-- Run 'data-code-extension %s init' first to initialize a package
-- Check that config.json exists in the payload directory
-
-# actions.scanPermissionDenied
-
-- Check that you have read permissions for the directory
-- Verify all Python files are readable
-- Ensure the config file is writable
-
-# actions.scanExecutionFailed
-
-- Verify the datacustomcode binary is properly installed
-- Check that the package directory contains valid Python files
-- Run 'datacustomcode version' to verify the binary works
-- Check the error message for specific issues
 
 # flags.configFile.summary
 

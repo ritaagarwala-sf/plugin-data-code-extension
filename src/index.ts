@@ -19,10 +19,23 @@ export { PipChecker, type PipPackageInfo } from './utils/pipChecker.js';
 export { DatacodeBinaryChecker, type DatacodeBinaryInfo } from './utils/datacodeBinaryChecker.js';
 export {
   DatacodeBinaryExecutor,
-  type DatacodeInitExecutionResult,
-  type DatacodeScanExecutionResult,
   type DatacodeZipExecutionResult,
   type DatacodeDeployExecutionResult,
   type DatacodeRunExecutionResult,
-  type ScanResult,
 } from './utils/datacodeBinaryExecutor.js';
+export { executeNativeInit, type NativeInitOptions, type NativeInitResult } from './utils/nativeInit.js';
+export {
+  executeNativeScan,
+  scanFile,
+  scanFileForImports,
+  updateConfig,
+  writeRequirementsFile,
+  findBaseDirectory,
+  getPackageType,
+  type CodeType,
+  type DataAccessLayerCalls,
+  type NativeScanOptions,
+  type NativeScanResult,
+  type ScanPermissions,
+} from './utils/nativeScan.js';
+export type { ScanResult } from './base/scanBase.js';

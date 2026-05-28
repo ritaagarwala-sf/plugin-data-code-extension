@@ -68,14 +68,6 @@ Created: %s
 
 Data Cloud package initialized and ready for development!
 
-# info.initSuccess
-
-Data Code Extension initialized successfully!
-
-# error.initFailed
-
-Failed to initialize Data Code Extension
-
 # flags.packageDir.summary
 
 Directory path where the package will be created.

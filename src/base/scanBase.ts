@@ -13,16 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import path from 'node:path';
 import { SfCommand } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { DatacodeBinaryExecutor, type ScanResult } from '../utils/datacodeBinaryExecutor.js';
-import { checkEnvironment } from '../utils/environmentChecker.js';
+import { executeNativeScan, type NativeScanResult } from '../utils/nativeScan.js';
 
 export type BaseScanFlags = {
   entrypoint?: string;
   'config-file'?: string;
   'dry-run': boolean;
   'no-requirements': boolean;
+};
+
+export type ScanResult = {
+  success: boolean;
+  codeType: 'script' | 'function';
+  workingDirectory: string;
+  message: string;
+  executionResult: NativeScanResult;
 };
 
 // eslint-disable-next-line sf-plugin/command-summary, sf-plugin/command-example
@@ -34,49 +42,40 @@ export abstract class ScanBase extends SfCommand<ScanResult> {
     const codeType = this.getCodeType();
     const messages = this.getMessages();
 
-    const config = flags.entrypoint;
-    const configFile = flags['config-file'];
-    const dryRun = flags['dry-run'];
-    const noRequirements = flags['no-requirements'];
-
     const workingDir = process.cwd();
 
     try {
-      const { pythonInfo, packageInfo, binaryInfo } = await checkEnvironment(
-        this.spinner,
-        this.log.bind(this),
-        messages
-      );
-
       this.spinner.start(messages.getMessage('info.executingScan'));
-      const executionResult = await DatacodeBinaryExecutor.executeBinaryScan(
+      const executionResult = await executeNativeScan({
         workingDir,
-        config,
-        dryRun,
-        noRequirements,
-        configFile
-      );
-
+        entrypoint: flags.entrypoint,
+        configFile: flags['config-file'],
+        dryRun: flags['dry-run'],
+        noRequirements: flags['no-requirements'],
+        packageType: codeType,
+      });
       this.spinner.stop();
+
       this.log(messages.getMessage('info.scanExecuted', [workingDir]));
 
-      if (executionResult.stdout) {
-        this.log(executionResult.stdout);
+      // Echo the resulting config — mirrors the Python CLI's behavior of printing the
+      // scan output to stdout for the user to review.
+      this.log(JSON.stringify(executionResult.config, null, 2));
+
+      for (const file of executionResult.filesScanned) {
+        this.log(messages.getMessage('info.fileScanned', [file]));
       }
 
-      if (executionResult.stderr) {
-        this.warn(executionResult.stderr);
+      if (!executionResult.dryRun && executionResult.requirementsPath) {
+        this.log(`Generated requirements file: ${path.relative(workingDir, executionResult.requirementsPath)}`);
       }
 
-      if (dryRun) {
+      if (executionResult.dryRun) {
         this.log(messages.getMessage('info.dryRunNotice'));
       }
 
       return {
         success: true,
-        pythonVersion: pythonInfo,
-        packageInfo,
-        binaryInfo,
         codeType,
         workingDirectory: workingDir,
         executionResult,
@@ -84,9 +83,6 @@ export abstract class ScanBase extends SfCommand<ScanResult> {
       };
     } catch (error) {
       this.spinner.stop();
-
-      // The error will be properly handled by the Salesforce CLI framework
-      // as an SfError with actions, so we just throw it
       throw error;
     }
   }

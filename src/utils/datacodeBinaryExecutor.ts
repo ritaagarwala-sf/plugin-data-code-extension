@@ -19,29 +19,10 @@ import { SfError } from '@salesforce/core';
 
 const debug = debuglog('datacustomcode');
 import { Messages } from '@salesforce/core';
-import { type PythonVersionInfo } from './pythonChecker.js';
-import { type PipPackageInfo } from './pipChecker.js';
-import { type DatacodeBinaryInfo } from './datacodeBinaryChecker.js';
 import { spawnAsync, type SpawnError } from './spawnHelper.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension', 'datacodeBinaryExecutor');
-
-export type DatacodeInitExecutionResult = {
-  stdout: string;
-  stderr: string;
-  filesCreated?: string[];
-  projectPath: string;
-};
-
-export type DatacodeScanExecutionResult = {
-  stdout: string;
-  stderr: string;
-  workingDirectory: string;
-  permissions?: string[];
-  requirements?: string[];
-  filesScanned?: string[];
-};
 
 export type DatacodeZipExecutionResult = {
   stdout: string;
@@ -66,132 +47,7 @@ export type DatacodeRunExecutionResult = {
   output?: string;
 };
 
-export type ScanResult = {
-  success: boolean;
-  pythonVersion: PythonVersionInfo;
-  packageInfo?: PipPackageInfo;
-  binaryInfo?: DatacodeBinaryInfo;
-  codeType: 'script' | 'function';
-  workingDirectory: string;
-  message: string;
-  executionResult?: DatacodeScanExecutionResult;
-};
-
 export class DatacodeBinaryExecutor {
-  /**
-   * Executes datacustomcode init with the specified parameters.
-   *
-   * @param codeType The type of code package to initialize
-   * @param packageDir The directory to initialize the package in
-   * @param useInFeature Optional feature flag (function packages only)
-   * @returns Execution result with stdout, stderr, and parsed file list
-   * @throws SfError if execution fails
-   */
-  public static async executeBinaryInit(
-    codeType: 'script' | 'function',
-    packageDir: string,
-    useInFeature?: string
-  ): Promise<DatacodeInitExecutionResult> {
-    try {
-      const args = ['init', '--code-type', codeType];
-
-      if (useInFeature) {
-        args.push('--use-in-feature', useInFeature);
-      }
-
-      args.push(packageDir);
-
-      const { stdout, stderr } = await spawnAsync('datacustomcode', args, {
-        timeout: 30_000,
-      });
-
-      // Parse the template directory from init output
-      // Python CLI outputs: "Copying template to <dir>"
-      const copyMatch = /Copying template to (.+)/.exec(stdout);
-      const filesCreated = copyMatch ? [copyMatch[1].trim()] : undefined;
-
-      return {
-        stdout: stdout.trim(),
-        stderr: stderr.trim(),
-        filesCreated,
-        projectPath: packageDir,
-      };
-    } catch (error) {
-      const spawnError = error as SpawnError;
-      const binaryOutput = spawnError.stderr?.trim() ?? (error instanceof Error ? error.message : String(error));
-      throw new SfError(
-        messages.getMessage('error.initExecutionFailed', [packageDir, binaryOutput]),
-        'InitExecutionFailed',
-        messages.getMessages('actions.initExecutionFailed')
-      );
-    }
-  }
-
-  /**
-   * Executes datacustomcode scan with the specified parameters.
-   *
-   * @param workingDir The directory to scan (should contain an initialized package)
-   * @param config Optional path to config.json file
-   * @param dryRun Whether to perform a dry run without modifying files
-   * @param noRequirements Whether to skip updating requirements.txt
-   * @returns Execution result with stdout, stderr, and parsed scan data
-   * @throws SfError if execution fails
-   */
-  public static async executeBinaryScan(
-    workingDir: string,
-    config?: string,
-    dryRun: boolean = false,
-    noRequirements: boolean = false,
-    configFile?: string
-  ): Promise<DatacodeScanExecutionResult> {
-    const args = ['scan'];
-
-    if (dryRun) {
-      args.push('--dry-run');
-    }
-
-    if (noRequirements) {
-      args.push('--no-requirements');
-    }
-
-    if (configFile) {
-      args.push('--config', configFile);
-    }
-
-    args.push(config ?? 'payload/entrypoint.py');
-
-    try {
-      const { stdout, stderr } = await spawnAsync('datacustomcode', args, {
-        cwd: workingDir,
-        timeout: 60_000,
-      });
-
-      // Parse scanned files from output
-      // Python CLI outputs: "Scanning <file>..."
-      const filesScanned: string[] = [];
-      const filePattern = /Scanning (.+)\.\.\./g;
-      let match;
-      while ((match = filePattern.exec(stdout)) !== null) {
-        filesScanned.push(match[1].trim());
-      }
-
-      return {
-        stdout: stdout.trim(),
-        stderr: stderr.trim(),
-        workingDirectory: workingDir,
-        filesScanned: filesScanned.length > 0 ? filesScanned : undefined,
-      };
-    } catch (error) {
-      const spawnError = error as SpawnError;
-      const binaryOutput = spawnError.stderr?.trim() ?? (error instanceof Error ? error.message : String(error));
-      throw new SfError(
-        messages.getMessage('error.scanExecutionFailed', [workingDir, binaryOutput]),
-        'ScanExecutionFailed',
-        messages.getMessages('actions.scanExecutionFailed')
-      );
-    }
-  }
-
   /**
    * Executes datacustomcode zip with the specified parameters.
    *

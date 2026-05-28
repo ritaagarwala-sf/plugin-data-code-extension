@@ -19,11 +19,6 @@ import * as os from 'node:os';
 import { TestContext } from '@salesforce/core/testSetup';
 import { expect } from 'chai';
 import { stubSfCommandUx } from '@salesforce/sf-plugins-core';
-import { SfError } from '@salesforce/core';
-import { PythonChecker } from '../../../src/utils/pythonChecker.js';
-import { PipChecker } from '../../../src/utils/pipChecker.js';
-import { DatacodeBinaryChecker } from '../../../src/utils/datacodeBinaryChecker.js';
-import { DatacodeBinaryExecutor } from '../../../src/utils/datacodeBinaryExecutor.js';
 import ScriptScan from '../../../src/commands/data-code-extension/script/scan.js';
 import FunctionScan from '../../../src/commands/data-code-extension/function/scan.js';
 
@@ -31,16 +26,36 @@ describe('data-code-extension scan commands', () => {
   const $$ = new TestContext();
   let sfCommandStubs: ReturnType<typeof stubSfCommandUx>;
   let testDir: string;
-  let tempConfigFile: string;
+  let originalCwd: string;
+
+  function makeScriptPackage(scanCode: string, configJson: Record<string, unknown> = { dataspace: 'default' }): void {
+    fs.mkdirSync(path.join(testDir, '.datacustomcode_proj'), { recursive: true });
+    fs.writeFileSync(path.join(testDir, '.datacustomcode_proj', 'sdk_config.json'), JSON.stringify({ type: 'script' }));
+    fs.mkdirSync(path.join(testDir, 'payload'), { recursive: true });
+    fs.writeFileSync(path.join(testDir, 'payload', 'entrypoint.py'), scanCode);
+    fs.writeFileSync(path.join(testDir, 'payload', 'config.json'), JSON.stringify(configJson));
+  }
+
+  function makeFunctionPackage(scanCode: string): void {
+    fs.mkdirSync(path.join(testDir, '.datacustomcode_proj'), { recursive: true });
+    fs.writeFileSync(
+      path.join(testDir, '.datacustomcode_proj', 'sdk_config.json'),
+      JSON.stringify({ type: 'function' })
+    );
+    fs.mkdirSync(path.join(testDir, 'payload'), { recursive: true });
+    fs.writeFileSync(path.join(testDir, 'payload', 'entrypoint.py'), scanCode);
+    fs.writeFileSync(path.join(testDir, 'payload', 'config.json'), JSON.stringify({}));
+  }
 
   beforeEach(() => {
     sfCommandStubs = stubSfCommandUx($$.SANDBOX);
     testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'test-scan-'));
-    tempConfigFile = path.join(testDir, 'config.json');
-    fs.writeFileSync(tempConfigFile, JSON.stringify({}));
+    originalCwd = process.cwd();
+    process.chdir(testDir);
   });
 
   afterEach(() => {
+    process.chdir(originalCwd);
     $$.restore();
     if (testDir && fs.existsSync(testDir)) {
       fs.rmSync(testDir, { recursive: true, force: true });
@@ -48,391 +63,173 @@ describe('data-code-extension scan commands', () => {
   });
 
   describe('script scan', () => {
-    it('should run scan successfully with default config', async () => {
-      // Mock the Python checker
-      $$.SANDBOX.stub(PythonChecker, 'checkPython311').resolves({
-        command: 'python3',
-        version: '3.11.5',
-        major: 3,
-        minor: 11,
-        patch: 5,
-      });
-
-      // Mock the pip checker
-      $$.SANDBOX.stub(PipChecker, 'checkPackage').resolves({
-        name: 'salesforce-data-customcode',
-        version: '1.0.0',
-        location: '/usr/local/lib/python3.11/site-packages',
-        pipCommand: 'pip3',
-      });
-
-      // Mock the binary checker
-      $$.SANDBOX.stub(DatacodeBinaryChecker, 'checkBinary').resolves({
-        command: 'datacustomcode',
-        version: '1.0.0',
-        path: '/usr/local/bin/datacustomcode',
-      });
-
-      // Mock the scan execution
-      $$.SANDBOX.stub(DatacodeBinaryExecutor, 'executeBinaryScan').resolves({
-        stdout: 'Scan completed successfully',
-        stderr: '',
-        workingDirectory: process.cwd(),
-        permissions: ['READ_DATA', 'WRITE_DATA'],
-        requirements: ['pandas', 'numpy'],
-        filesScanned: ['main.py', 'utils.py'],
-      });
+    it('updates config.json with scanned permissions', async () => {
+      makeScriptPackage(
+        'from datacustomcode.client import Client\n' +
+          'def main():\n' +
+          '    c = Client()\n' +
+          '    c.read_dlo("Source__dll")\n' +
+          '    c.write_to_dlo("Dest__dll", df)\n'
+      );
 
       const result = await ScriptScan.run([]);
 
       expect(result.success).to.be.true;
       expect(result.codeType).to.equal('script');
-      expect(result.workingDirectory).to.equal(process.cwd());
-      expect(result.executionResult?.permissions).to.deep.equal(['READ_DATA', 'WRITE_DATA']);
-      expect(result.executionResult?.requirements).to.deep.equal(['pandas', 'numpy']);
-      expect(result.executionResult?.filesScanned).to.deep.equal(['main.py', 'utils.py']);
+      expect(result.executionResult.dryRun).to.be.false;
 
-      // Verify that logging was called
+      const written = JSON.parse(fs.readFileSync(path.join(testDir, 'payload', 'config.json'), 'utf8')) as Record<
+        string,
+        unknown
+      > & { permissions: { read: { dlo?: string[] }; write: { dlo?: string[] } } };
+      expect(written.entryPoint).to.equal('entrypoint.py');
+      expect(written.dataspace).to.equal('default');
+      expect(written.permissions.read.dlo).to.deep.equal(['Source__dll']);
+      expect(written.permissions.write.dlo).to.deep.equal(['Dest__dll']);
       expect(sfCommandStubs.log.called).to.be.true;
     });
 
-    it('should run scan with custom config path', async () => {
-      // Mock the Python checker
-      $$.SANDBOX.stub(PythonChecker, 'checkPython311').resolves({
-        command: 'python3',
-        version: '3.11.5',
-        major: 3,
-        minor: 11,
-        patch: 5,
-      });
+    it('writes requirements.txt by default and merges with existing entries', async () => {
+      makeScriptPackage(
+        'import pandas\n' +
+          'from numpy import array\n' +
+          'from datacustomcode.client import Client\n' +
+          'def main():\n' +
+          '    Client().read_dlo("X__dll")\n' +
+          '    Client().write_to_dlo("Y__dll", df)\n'
+      );
+      // Pre-existing requirements.txt should be merged with newly discovered packages.
+      fs.writeFileSync(path.join(testDir, 'requirements.txt'), 'requests\npandas\n');
 
-      // Mock the pip checker
-      $$.SANDBOX.stub(PipChecker, 'checkPackage').resolves({
-        name: 'salesforce-data-customcode',
-        version: '1.0.0',
-        location: '/usr/local/lib/python3.11/site-packages',
-        pipCommand: 'pip3',
-      });
+      await ScriptScan.run([]);
 
-      // Mock the binary checker
-      $$.SANDBOX.stub(DatacodeBinaryChecker, 'checkBinary').resolves({
-        command: 'datacustomcode',
-        version: '1.0.0',
-        path: '/usr/local/bin/datacustomcode',
-      });
-
-      // Mock the scan execution
-      const scanStub = $$.SANDBOX.stub(DatacodeBinaryExecutor, 'executeBinaryScan').resolves({
-        stdout: 'Scan completed successfully',
-        stderr: '',
-        workingDirectory: process.cwd(),
-        permissions: ['READ_DATA'],
-        requirements: ['pandas'],
-        filesScanned: ['main.py'],
-      });
-
-      const result = await ScriptScan.run(['--config-file', tempConfigFile]);
-
-      expect(scanStub.calledWith(process.cwd(), undefined, false, false, tempConfigFile)).to.be.true;
-      expect(result.success).to.be.true;
+      const reqs = fs
+        .readFileSync(path.join(testDir, 'requirements.txt'), 'utf8')
+        .split('\n')
+        .filter((l) => l.trim().length > 0);
+      expect(reqs).to.deep.equal(['numpy', 'pandas', 'requests']);
     });
 
-    it('should run dry run scan', async () => {
-      // Mock the Python checker
-      $$.SANDBOX.stub(PythonChecker, 'checkPython311').resolves({
-        command: 'python3',
-        version: '3.11.5',
-        major: 3,
-        minor: 11,
-        patch: 5,
-      });
+    it('skips writing requirements when --no-requirements is set', async () => {
+      makeScriptPackage(
+        'import pandas\nfrom datacustomcode.client import Client\n' +
+          'def main():\n' +
+          '    Client().read_dlo("X__dll")\n' +
+          '    Client().write_to_dlo("Y__dll", df)\n'
+      );
 
-      // Mock the pip checker
-      $$.SANDBOX.stub(PipChecker, 'checkPackage').resolves({
-        name: 'salesforce-data-customcode',
-        version: '1.0.0',
-        location: '/usr/local/lib/python3.11/site-packages',
-        pipCommand: 'pip3',
-      });
+      await ScriptScan.run(['--no-requirements']);
 
-      // Mock the binary checker
-      $$.SANDBOX.stub(DatacodeBinaryChecker, 'checkBinary').resolves({
-        command: 'datacustomcode',
-        version: '1.0.0',
-        path: '/usr/local/bin/datacustomcode',
-      });
+      expect(fs.existsSync(path.join(testDir, 'requirements.txt'))).to.be.false;
+    });
 
-      // Mock the scan execution
-      const scanStub = $$.SANDBOX.stub(DatacodeBinaryExecutor, 'executeBinaryScan').resolves({
-        stdout: 'Dry run completed',
-        stderr: '',
-        workingDirectory: process.cwd(),
-        permissions: ['READ_DATA'],
-        requirements: ['pandas'],
-        filesScanned: ['main.py'],
-      });
+    it('does not write files in --dry-run mode', async () => {
+      makeScriptPackage(
+        'from datacustomcode.client import Client\n' +
+          'def main():\n' +
+          '    Client().read_dlo("X__dll")\n' +
+          '    Client().write_to_dlo("Y__dll", df)\n'
+      );
+      const before = fs.readFileSync(path.join(testDir, 'payload', 'config.json'), 'utf8');
 
       const result = await ScriptScan.run(['--dry-run']);
 
-      expect(scanStub.calledWith(process.cwd(), undefined, true, false)).to.be.true;
-      expect(result.success).to.be.true;
+      expect(result.executionResult.dryRun).to.be.true;
+      expect(fs.readFileSync(path.join(testDir, 'payload', 'config.json'), 'utf8')).to.equal(before);
+      expect(fs.existsSync(path.join(testDir, 'requirements.txt'))).to.be.false;
     });
 
-    it('should run scan without requirements update', async () => {
-      // Mock the Python checker
-      $$.SANDBOX.stub(PythonChecker, 'checkPython311').resolves({
-        command: 'python3',
-        version: '3.11.5',
-        major: 3,
-        minor: 11,
-        patch: 5,
-      });
-
-      // Mock the pip checker
-      $$.SANDBOX.stub(PipChecker, 'checkPackage').resolves({
-        name: 'salesforce-data-customcode',
-        version: '1.0.0',
-        location: '/usr/local/lib/python3.11/site-packages',
-        pipCommand: 'pip3',
-      });
-
-      // Mock the binary checker
-      $$.SANDBOX.stub(DatacodeBinaryChecker, 'checkBinary').resolves({
-        command: 'datacustomcode',
-        version: '1.0.0',
-        path: '/usr/local/bin/datacustomcode',
-      });
-
-      // Mock the scan execution
-      const scanStub = $$.SANDBOX.stub(DatacodeBinaryExecutor, 'executeBinaryScan').resolves({
-        stdout: 'Scan completed without requirements',
-        stderr: '',
-        workingDirectory: process.cwd(),
-        permissions: ['READ_DATA'],
-        filesScanned: ['main.py'],
-      });
-
-      const result = await ScriptScan.run(['--no-requirements']);
-
-      expect(scanStub.calledWith(process.cwd(), undefined, false, true)).to.be.true;
-      expect(result.success).to.be.true;
-    });
-
-    it('should handle combination of flags', async () => {
-      // Mock the Python checker
-      $$.SANDBOX.stub(PythonChecker, 'checkPython311').resolves({
-        command: 'python3',
-        version: '3.11.5',
-        major: 3,
-        minor: 11,
-        patch: 5,
-      });
-
-      // Mock the pip checker
-      $$.SANDBOX.stub(PipChecker, 'checkPackage').resolves({
-        name: 'salesforce-data-customcode',
-        version: '1.0.0',
-        location: '/usr/local/lib/python3.11/site-packages',
-        pipCommand: 'pip3',
-      });
-
-      // Mock the binary checker
-      $$.SANDBOX.stub(DatacodeBinaryChecker, 'checkBinary').resolves({
-        command: 'datacustomcode',
-        version: '1.0.0',
-        path: '/usr/local/bin/datacustomcode',
-      });
-
-      // Mock the scan execution
-      const scanStub = $$.SANDBOX.stub(DatacodeBinaryExecutor, 'executeBinaryScan').resolves({
-        stdout: 'Dry run completed',
-        stderr: '',
-        workingDirectory: process.cwd(),
-        permissions: ['READ_DATA'],
-        filesScanned: ['main.py'],
-      });
-
-      const result = await ScriptScan.run(['--config-file', tempConfigFile, '--dry-run', '--no-requirements']);
-
-      expect(scanStub.calledWith(process.cwd(), undefined, true, true, tempConfigFile)).to.be.true;
-      expect(result.success).to.be.true;
-    });
-
-    it('should handle error when not in package directory', async () => {
-      // Mock the Python checker
-      $$.SANDBOX.stub(PythonChecker, 'checkPython311').resolves({
-        command: 'python3',
-        version: '3.11.5',
-        major: 3,
-        minor: 11,
-        patch: 5,
-      });
-
-      // Mock the pip checker
-      $$.SANDBOX.stub(PipChecker, 'checkPackage').resolves({
-        name: 'salesforce-data-customcode',
-        version: '1.0.0',
-        location: '/usr/local/lib/python3.11/site-packages',
-        pipCommand: 'pip3',
-      });
-
-      // Mock the binary checker
-      $$.SANDBOX.stub(DatacodeBinaryChecker, 'checkBinary').resolves({
-        command: 'datacustomcode',
-        version: '1.0.0',
-        path: '/usr/local/bin/datacustomcode',
-      });
-
-      // Mock the scan execution to throw error
-      $$.SANDBOX.stub(DatacodeBinaryExecutor, 'executeBinaryScan').rejects(
-        new SfError('Current directory is not an initialized Data Code Extension package', 'NotInPackageDir')
+    it('writes to --config-file path when supplied', async () => {
+      makeScriptPackage(
+        'from datacustomcode.client import Client\n' +
+          'def main():\n' +
+          '    Client().read_dlo("X__dll")\n' +
+          '    Client().write_to_dlo("Y__dll", df)\n'
       );
+      const altConfig = path.join(testDir, 'alt-config.json');
+      fs.writeFileSync(altConfig, JSON.stringify({ dataspace: 'CustomSpace', extraField: 1 }));
+
+      await ScriptScan.run(['--config-file', altConfig]);
+
+      const written = JSON.parse(fs.readFileSync(altConfig, 'utf8')) as {
+        dataspace: string;
+        entryPoint: string;
+        extraField?: number;
+        permissions: { read: { dlo?: string[] } };
+      };
+      expect(written.dataspace).to.equal('CustomSpace');
+      expect(written.extraField).to.equal(1);
+      expect(written.entryPoint).to.equal('entrypoint.py');
+      expect(written.permissions.read.dlo).to.deep.equal(['X__dll']);
+      // Default config.json should be untouched.
+      const defaultCfg = JSON.parse(fs.readFileSync(path.join(testDir, 'payload', 'config.json'), 'utf8')) as Record<
+        string,
+        unknown
+      >;
+      expect(defaultCfg.permissions).to.be.undefined;
+    });
+
+    it('throws when entrypoint is missing', async () => {
+      makeScriptPackage('def main():\n    pass\n');
+      fs.unlinkSync(path.join(testDir, 'payload', 'entrypoint.py'));
 
       try {
         await ScriptScan.run([]);
-        expect.fail('Should have thrown an error');
-      } catch (error) {
-        expect(error).to.be.instanceOf(SfError);
-        if (error instanceof SfError) {
-          expect(error.name).to.equal('NotInPackageDir');
-        }
+        expect.fail('Expected EntrypointNotFound');
+      } catch (err) {
+        expect(err).to.have.property('name', 'EntrypointNotFound');
       }
     });
 
-    it('should handle error when config file not found', async () => {
-      // Mock the Python checker
-      $$.SANDBOX.stub(PythonChecker, 'checkPython311').resolves({
-        command: 'python3',
-        version: '3.11.5',
-        major: 3,
-        minor: 11,
-        patch: 5,
-      });
-
-      // Mock the pip checker
-      $$.SANDBOX.stub(PipChecker, 'checkPackage').resolves({
-        name: 'salesforce-data-customcode',
-        version: '1.0.0',
-        location: '/usr/local/lib/python3.11/site-packages',
-        pipCommand: 'pip3',
-      });
-
-      // Mock the binary checker
-      $$.SANDBOX.stub(DatacodeBinaryChecker, 'checkBinary').resolves({
-        command: 'datacustomcode',
-        version: '1.0.0',
-        path: '/usr/local/bin/datacustomcode',
-      });
-
-      // Mock the scan execution to throw error
-      $$.SANDBOX.stub(DatacodeBinaryExecutor, 'executeBinaryScan').rejects(
-        new SfError(`Config file not found at ${tempConfigFile}`, 'ConfigNotFound')
-      );
+    it('throws when entrypoint has no read calls', async () => {
+      makeScriptPackage('def main():\n    pass\n');
 
       try {
-        await ScriptScan.run(['--config-file', tempConfigFile]);
-        expect.fail('Should have thrown an error');
-      } catch (error) {
-        expect(error).to.be.instanceOf(SfError);
-        if (error instanceof SfError) {
-          expect(error.name).to.equal('ConfigNotFound');
-        }
+        await ScriptScan.run([]);
+        expect.fail('Expected InvalidEntrypoint');
+      } catch (err) {
+        expect(err).to.have.property('name', 'InvalidEntrypoint');
       }
-    });
-
-    it('should output JSON format', async () => {
-      // Mock the Python checker
-      $$.SANDBOX.stub(PythonChecker, 'checkPython311').resolves({
-        command: 'python3',
-        version: '3.11.5',
-        major: 3,
-        minor: 11,
-        patch: 5,
-      });
-
-      // Mock the pip checker
-      $$.SANDBOX.stub(PipChecker, 'checkPackage').resolves({
-        name: 'salesforce-data-customcode',
-        version: '1.0.0',
-        location: '/usr/local/lib/python3.11/site-packages',
-        pipCommand: 'pip3',
-      });
-
-      // Mock the binary checker
-      $$.SANDBOX.stub(DatacodeBinaryChecker, 'checkBinary').resolves({
-        command: 'datacustomcode',
-        version: '1.0.0',
-        path: '/usr/local/bin/datacustomcode',
-      });
-
-      // Mock the scan execution
-      $$.SANDBOX.stub(DatacodeBinaryExecutor, 'executeBinaryScan').resolves({
-        stdout: 'Scan completed successfully',
-        stderr: '',
-        workingDirectory: process.cwd(),
-        permissions: ['READ_DATA'],
-        requirements: ['pandas'],
-        filesScanned: ['main.py'],
-      });
-
-      const result = await ScriptScan.run([]);
-
-      expect(result).to.be.an('object');
-      expect(result.success).to.be.true;
-      expect(result.codeType).to.equal('script');
-      expect(result.workingDirectory).to.equal(process.cwd());
-      expect(result.executionResult?.permissions).to.deep.equal(['READ_DATA']);
-      expect(result.executionResult?.requirements).to.deep.equal(['pandas']);
     });
   });
 
   describe('function scan', () => {
-    it('should run function scan successfully', async () => {
-      // Mock the Python checker
-      $$.SANDBOX.stub(PythonChecker, 'checkPython311').resolves({
-        command: 'python3',
-        version: '3.11.5',
-        major: 3,
-        minor: 11,
-        patch: 5,
-      });
-
-      // Mock the pip checker
-      $$.SANDBOX.stub(PipChecker, 'checkPackage').resolves({
-        name: 'salesforce-data-customcode',
-        version: '1.0.0',
-        location: '/usr/local/lib/python3.11/site-packages',
-        pipCommand: 'pip3',
-      });
-
-      // Mock the binary checker
-      $$.SANDBOX.stub(DatacodeBinaryChecker, 'checkBinary').resolves({
-        command: 'datacustomcode',
-        version: '1.0.0',
-        path: '/usr/local/bin/datacustomcode',
-      });
-
-      // Mock the scan execution
-      $$.SANDBOX.stub(DatacodeBinaryExecutor, 'executeBinaryScan').resolves({
-        stdout: 'Scan completed successfully',
-        stderr: '',
-        workingDirectory: process.cwd(),
-        permissions: ['READ_DATA'],
-        requirements: ['pandas'],
-        filesScanned: ['handler.py'],
-      });
+    it('updates config.json with entryPoint and skips permissions', async () => {
+      makeFunctionPackage(
+        'from datacustomcode.function import Runtime\n' +
+          'def function(request, runtime: Runtime):\n' +
+          '    return {}\n'
+      );
 
       const result = await FunctionScan.run([]);
 
       expect(result.success).to.be.true;
       expect(result.codeType).to.equal('function');
-      expect(result.workingDirectory).to.equal(process.cwd());
-      expect(result.executionResult?.permissions).to.deep.equal(['READ_DATA']);
-      expect(result.executionResult?.requirements).to.deep.equal(['pandas']);
-      expect(result.executionResult?.filesScanned).to.deep.equal(['handler.py']);
 
-      // Verify that logging was called
-      expect(sfCommandStubs.log.called).to.be.true;
+      const written = JSON.parse(fs.readFileSync(path.join(testDir, 'payload', 'config.json'), 'utf8')) as Record<
+        string,
+        unknown
+      >;
+      expect(written.entryPoint).to.equal('entrypoint.py');
+      expect(written.permissions).to.be.undefined;
+      expect(written.dataspace).to.be.undefined;
+    });
+
+    it('writes requirements.txt for function packages too', async () => {
+      makeFunctionPackage(
+        'from datacustomcode.function import Runtime\n' +
+          'import pandas\n' +
+          'def function(request, runtime: Runtime):\n' +
+          '    return {}\n'
+      );
+
+      await FunctionScan.run([]);
+
+      const reqs = fs
+        .readFileSync(path.join(testDir, 'requirements.txt'), 'utf8')
+        .split('\n')
+        .filter((l) => l.trim().length > 0);
+      expect(reqs).to.deep.equal(['pandas']);
     });
   });
 });
