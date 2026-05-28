@@ -70,8 +70,8 @@ const DATA_ACCESS_METHODS = new Set(['read_dlo', 'read_dmo', 'write_to_dlo', 'wr
 /**
  * Python stdlib module names to exclude from requirements.txt.
  *
- * Mirrors `sys.stdlib_module_names` from the Python 3.10–3.13 runtimes the SDK supports.
- * Using the union of stdlib names across these versions; if a package becomes stdlib in a
+ * Mirrors `sys.stdlib_module_names` from the Python 3.11 runtimes the SDK supports.
+ * Using the stdlib names of this version; if a package becomes stdlib in a
  * later version we still want to drop it (it's not on PyPI and shipping it as a requirement
  * would break installs on the runtime).
  */
