@@ -19,7 +19,7 @@ import { type DatacodeBinaryInfo } from '../utils/datacodeBinaryChecker.js';
 
 export type SharedResultProps = {
   success: boolean;
-  pythonVersion: PythonVersionInfo;
+  pythonVersion?: PythonVersionInfo;
   packageInfo?: PipPackageInfo;
   binaryInfo?: DatacodeBinaryInfo;
   codeType: 'script' | 'function';

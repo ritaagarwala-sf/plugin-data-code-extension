@@ -24,14 +24,6 @@ import { spawnAsync, type SpawnError } from './spawnHelper.js';
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/plugin-data-code-extension', 'datacodeBinaryExecutor');
 
-export type DatacodeZipExecutionResult = {
-  stdout: string;
-  stderr: string;
-  archivePath?: string;
-  fileCount?: number;
-  archiveSize?: string;
-};
-
 export type DatacodeDeployExecutionResult = {
   stdout: string;
   stderr: string;
@@ -48,43 +40,6 @@ export type DatacodeRunExecutionResult = {
 };
 
 export class DatacodeBinaryExecutor {
-  /**
-   * Executes datacustomcode zip with the specified parameters.
-   *
-   * @param packageDir The directory containing the initialized package to zip
-   * @param network Optional network configuration for Jupyter notebooks
-   * @returns Execution result with stdout, stderr, and archive information
-   * @throws SfError if execution fails
-   */
-  public static async executeBinaryZip(packageDir: string, network?: string): Promise<DatacodeZipExecutionResult> {
-    const args = ['zip'];
-
-    if (network) {
-      args.push('--network', network);
-    }
-
-    args.push(packageDir);
-
-    try {
-      const { stdout, stderr } = await spawnAsync('datacustomcode', args, {
-        timeout: 120_000,
-      });
-
-      return {
-        stdout: stdout.trim(),
-        stderr: stderr.trim(),
-      };
-    } catch (error) {
-      const spawnError = error as SpawnError;
-      const binaryOutput = spawnError.stderr?.trim() ?? (error instanceof Error ? error.message : String(error));
-      throw new SfError(
-        messages.getMessage('error.zipExecutionFailed', [packageDir, binaryOutput]),
-        'ZipExecutionFailed',
-        messages.getMessages('actions.zipExecutionFailed')
-      );
-    }
-  }
-
   /**
    * Executes datacustomcode deploy with the specified parameters.
    *

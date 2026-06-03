@@ -35,45 +35,20 @@ describe('data-code-extension zip commands', () => {
     try {
       const result = await ScriptZip.run(['--package-dir', './test-package']);
 
-      // If Python 3.11+ is installed and package is initialized, check the success result
+      // The TS port no longer shells out to Python, so success no longer depends
+      // on Python/pip/binary checks. Just verify the structured result fields.
       expect(result.success).to.be.true;
       expect(result.codeType).to.equal('script');
       expect(result.packageDir).to.equal('./test-package');
-      expect(result.pythonVersion).to.have.property('command');
-      expect(result.pythonVersion).to.have.property('version');
-      expect(result.pythonVersion).to.have.property('major');
-      expect(result.pythonVersion).to.have.property('minor');
-      expect(result.pythonVersion).to.have.property('patch');
 
-      // Check package info if present
-      if (result.packageInfo) {
-        expect(result.packageInfo).to.have.property('name');
-        expect(result.packageInfo).to.have.property('version');
-        expect(result.packageInfo).to.have.property('location');
-        expect(result.packageInfo).to.have.property('pipCommand');
+      if (result.archivePath) {
+        expect(result.archivePath).to.be.a('string');
       }
-
-      // Check binary info if present
-      if (result.binaryInfo) {
-        expect(result.binaryInfo).to.have.property('command');
-        expect(result.binaryInfo).to.have.property('version');
-        // path is optional
+      if (result.fileCount !== undefined) {
+        expect(result.fileCount).to.be.a('number');
       }
-
-      // Check execution result if present (when all prerequisites are met)
-      if (result.executionResult) {
-        expect(result.executionResult).to.have.property('stdout');
-        expect(result.executionResult).to.have.property('stderr');
-        // Check optional fields
-        if (result.executionResult.archivePath) {
-          expect(result.executionResult.archivePath).to.be.a('string');
-        }
-        if (result.executionResult.fileCount !== undefined) {
-          expect(result.executionResult.fileCount).to.be.a('number');
-        }
-        if (result.executionResult.archiveSize) {
-          expect(result.executionResult.archiveSize).to.be.a('string');
-        }
+      if (result.archiveSizeBytes !== undefined) {
+        expect(result.archiveSizeBytes).to.be.a('number');
       }
 
       expect(result.message).to.be.a('string');
@@ -129,7 +104,6 @@ describe('data-code-extension zip commands', () => {
       // Should return a structured result
       expect(result).to.be.an('object');
       expect(result).to.have.property('success');
-      expect(result).to.have.property('pythonVersion');
       expect(result).to.have.property('message');
       expect(result).to.have.property('packageDir');
       // archivePath may or may not be present depending on whether zip succeeded
@@ -146,29 +120,18 @@ describe('data-code-extension zip commands', () => {
     try {
       const result = await FunctionZip.run(['--package-dir', './test-function']);
 
-      // If Python 3.11+ is installed and package is initialized, check the success result
       expect(result.success).to.be.true;
       expect(result.codeType).to.equal('function');
       expect(result.packageDir).to.equal('./test-function');
-      expect(result.pythonVersion).to.have.property('command');
-      expect(result.pythonVersion).to.have.property('version');
 
-      // Check package info if present
-      if (result.packageInfo) {
-        expect(result.packageInfo).to.have.property('name');
-        expect(result.packageInfo).to.have.property('version');
+      if (result.archivePath) {
+        expect(result.archivePath).to.be.a('string');
       }
-
-      // Check binary info if present
-      if (result.binaryInfo) {
-        expect(result.binaryInfo).to.have.property('command');
-        expect(result.binaryInfo).to.have.property('version');
+      if (result.fileCount !== undefined) {
+        expect(result.fileCount).to.be.a('number');
       }
-
-      // Check execution result if present
-      if (result.executionResult) {
-        expect(result.executionResult).to.have.property('stdout');
-        expect(result.executionResult).to.have.property('stderr');
+      if (result.archiveSizeBytes !== undefined) {
+        expect(result.archiveSizeBytes).to.be.a('number');
       }
 
       expect(result.message).to.be.a('string');
@@ -219,7 +182,6 @@ describe('data-code-extension zip commands', () => {
       // Should return a structured result
       expect(result).to.be.an('object');
       expect(result).to.have.property('success');
-      expect(result).to.have.property('pythonVersion');
       expect(result).to.have.property('message');
       expect(result).to.have.property('packageDir');
     } catch (error) {
