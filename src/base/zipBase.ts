@@ -17,17 +17,20 @@ import { existsSync } from 'node:fs';
 import { SfCommand } from '@salesforce/sf-plugins-core';
 import { Messages, SfError } from '@salesforce/core';
 import { zipWithSfError, type ZipResult as ZipBuilderResult } from '../utils/zipBuilder.js';
-import { type SharedResultProps } from './types.js';
 
 export type BaseZipFlags = {
   'package-dir': string;
   network?: string;
 };
 
-export type ZipResult = SharedResultProps & {
-  archivePath?: string;
-  fileCount?: number;
-  archiveSizeBytes?: number;
+export type ZipResult = {
+  success: boolean;
+  codeType: 'script' | 'function';
+  packageDir: string;
+  archivePath: string;
+  fileCount: number;
+  archiveSizeBytes: number;
+  message: string;
 };
 
 function formatBytes(bytes: number): string {

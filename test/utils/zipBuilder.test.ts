@@ -13,7 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync, readFileSync } from 'node:fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  rmSync,
+  existsSync,
+  readFileSync,
+  symlinkSync,
+  chmodSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import * as path from 'node:path';
 import { expect } from 'chai';
@@ -23,8 +32,10 @@ import {
   dockerBuildCmd,
   dockerRunCmd,
   hasNonemptyRequirementsFile,
+  prepareDependencyArchive,
   zip,
   ZIP_FILE_NAME,
+  type DockerRunner,
 } from '../../src/utils/zipBuilder.js';
 
 const SDK_CONFIG_DIR = '.datacustomcode_proj';
@@ -52,30 +63,22 @@ describe('zipBuilder.hasNonemptyRequirementsFile', () => {
   });
 
   it('returns false when requirements.txt is missing', () => {
-    const payload = path.join(tempDir, 'payload');
-    mkdirSync(payload);
-    expect(hasNonemptyRequirementsFile(payload)).to.equal(false);
+    expect(hasNonemptyRequirementsFile(tempDir)).to.equal(false);
   });
 
   it('returns false when requirements.txt only has comments and blank lines', () => {
-    const payload = path.join(tempDir, 'payload');
-    mkdirSync(payload);
     writeFileSync(path.join(tempDir, 'requirements.txt'), '# comment\n\n   \n# another\n');
-    expect(hasNonemptyRequirementsFile(payload)).to.equal(false);
+    expect(hasNonemptyRequirementsFile(tempDir)).to.equal(false);
   });
 
   it('returns true when requirements.txt has at least one non-comment line', () => {
-    const payload = path.join(tempDir, 'payload');
-    mkdirSync(payload);
     writeFileSync(path.join(tempDir, 'requirements.txt'), '# comment\npandas==2.0.0\n');
-    expect(hasNonemptyRequirementsFile(payload)).to.equal(true);
+    expect(hasNonemptyRequirementsFile(tempDir)).to.equal(true);
   });
 
   it('treats indented comments as comments', () => {
-    const payload = path.join(tempDir, 'payload');
-    mkdirSync(payload);
     writeFileSync(path.join(tempDir, 'requirements.txt'), '   # indented comment\n');
-    expect(hasNonemptyRequirementsFile(payload)).to.equal(false);
+    expect(hasNonemptyRequirementsFile(tempDir)).to.equal(false);
   });
 });
 
@@ -224,5 +227,188 @@ describe('zipBuilder.zip orchestration', () => {
     }
     expect(caught).to.be.instanceOf(Error);
     expect(caught!.message).to.match(/Package directory not found/);
+  });
+});
+
+describe('zipBuilder.createZip symlinks and permissions', () => {
+  let tempDir: string;
+  let originalCwd: string;
+
+  beforeEach(() => {
+    tempDir = mkdtempSync(path.join(tmpdir(), 'zipBuilder-symlink-'));
+    originalCwd = process.cwd();
+    process.chdir(tempDir);
+  });
+
+  afterEach(() => {
+    process.chdir(originalCwd);
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('includes file symlinks (reading their target contents) like Python os.walk', async function () {
+    if (process.platform === 'win32') {
+      this.skip();
+      return;
+    }
+    const payload = path.join(tempDir, 'payload');
+    mkdirSync(payload);
+    const targetPath = path.join(tempDir, 'real_target.py');
+    writeFileSync(targetPath, 'hello-from-target');
+    symlinkSync(targetPath, path.join(payload, 'link.py'));
+
+    const result = await createZip('payload');
+    expect(result.fileCount).to.equal(1);
+
+    const buf = new Uint8Array(readFileSync(ZIP_FILE_NAME));
+    const unzipped = await JSZip.loadAsync(buf);
+    expect(Object.keys(unzipped.files)).to.deep.equal(['link.py']);
+    const content = await unzipped.files['link.py'].async('string');
+    expect(content).to.equal('hello-from-target');
+  });
+
+  it('skips broken symlinks rather than failing the whole zip', async function () {
+    if (process.platform === 'win32') {
+      this.skip();
+      return;
+    }
+    const payload = path.join(tempDir, 'payload');
+    mkdirSync(payload);
+    writeFileSync(path.join(payload, 'real.py'), 'real');
+    symlinkSync('/nonexistent/path', path.join(payload, 'broken.py'));
+
+    const result = await createZip('payload');
+    expect(result.fileCount).to.equal(1);
+    const buf = new Uint8Array(readFileSync(ZIP_FILE_NAME));
+    const unzipped = await JSZip.loadAsync(buf);
+    expect(Object.keys(unzipped.files)).to.deep.equal(['real.py']);
+  });
+
+  it('preserves unix executable permissions on archive entries', async function () {
+    if (process.platform === 'win32') {
+      this.skip();
+      return;
+    }
+    const payload = path.join(tempDir, 'payload');
+    mkdirSync(payload);
+    const scriptPath = path.join(payload, 'run.sh');
+    writeFileSync(scriptPath, '#!/bin/bash\necho hi\n');
+    chmodSync(scriptPath, 0o755);
+
+    await createZip('payload');
+    const buf = new Uint8Array(readFileSync(ZIP_FILE_NAME));
+    const unzipped = await JSZip.loadAsync(buf);
+    const entry = unzipped.files['run.sh'];
+    expect(entry).to.exist;
+    expect(entry.unixPermissions).to.equal(0o755);
+  });
+});
+
+describe('zipBuilder.prepareDependencyArchive', () => {
+  let baseDir: string;
+
+  beforeEach(() => {
+    baseDir = mkdtempSync(path.join(tmpdir(), 'zipBuilder-prep-'));
+    writeFileSync(path.join(baseDir, 'requirements.txt'), 'pandas==2.0.0\n');
+    writeFileSync(path.join(baseDir, 'build_native_dependencies.sh'), '#!/bin/bash\necho stub\n');
+    writeFileSync(path.join(baseDir, 'Dockerfile.dependencies'), 'FROM python:3.11\n');
+  });
+
+  afterEach(() => {
+    rmSync(baseDir, { recursive: true, force: true });
+  });
+
+  type Calls = {
+    imageExists: number;
+    build: Array<{ args: string[]; cwd: string }>;
+    run: Array<{ args: string[] }>;
+  };
+
+  function makeRunner(opts: { imageExists: boolean; onRun?: (mountPath: string) => void }): {
+    runner: DockerRunner;
+    calls: Calls;
+  } {
+    const calls: Calls = { imageExists: 0, build: [], run: [] };
+    const runner: DockerRunner = {
+      async imageExists() {
+        calls.imageExists += 1;
+        return opts.imageExists;
+      },
+      async build(args, runOpts) {
+        calls.build.push({ args, cwd: runOpts.cwd });
+      },
+      async run(args) {
+        calls.run.push({ args });
+        // The dockerRunCmd shape is `['run', '--rm', '-v', '<mount>:/workspace', ...]`
+        const mountArg = args[args.indexOf('-v') + 1];
+        const [mountPath] = mountArg.split(':');
+        opts.onRun?.(mountPath);
+      },
+    };
+    return { runner, calls };
+  }
+
+  it('copies the script tarball into <baseDir>/payload/archives for script packages', async () => {
+    const { runner, calls } = makeRunner({
+      imageExists: true,
+      onRun: (mountPath) => {
+        // Simulate the docker container producing the archive in the mount.
+        writeFileSync(path.join(mountPath, 'native_dependencies.tar.gz'), 'tar-bytes');
+      },
+    });
+
+    await prepareDependencyArchive(baseDir, 'default', 'script', () => {}, runner);
+
+    const archivePath = path.join(baseDir, 'payload', 'archives', 'native_dependencies.tar.gz');
+    expect(existsSync(archivePath)).to.equal(true);
+    expect(readFileSync(archivePath, 'utf-8')).to.equal('tar-bytes');
+    // imageExists=true, so we should NOT have built.
+    expect(calls.build).to.have.length(0);
+    expect(calls.run).to.have.length(1);
+  });
+
+  it('copies py-files into <baseDir>/payload/py-files for function packages', async () => {
+    const { runner } = makeRunner({
+      imageExists: true,
+      onRun: (mountPath) => {
+        const pyFilesSrc = path.join(mountPath, 'py-files');
+        mkdirSync(pyFilesSrc);
+        writeFileSync(path.join(pyFilesSrc, 'a.py'), 'a-content');
+        mkdirSync(path.join(pyFilesSrc, 'sub'));
+        writeFileSync(path.join(pyFilesSrc, 'sub', 'b.py'), 'b-content');
+      },
+    });
+
+    await prepareDependencyArchive(baseDir, 'default', 'function', () => {}, runner);
+
+    const dest = path.join(baseDir, 'payload', 'py-files');
+    expect(existsSync(path.join(dest, 'a.py'))).to.equal(true);
+    expect(readFileSync(path.join(dest, 'a.py'), 'utf-8')).to.equal('a-content');
+    expect(readFileSync(path.join(dest, 'sub', 'b.py'), 'utf-8')).to.equal('b-content');
+  });
+
+  it('builds the docker image when it is missing, scoped to baseDirectory', async () => {
+    const { runner, calls } = makeRunner({
+      imageExists: false,
+      onRun: (mountPath) => {
+        writeFileSync(path.join(mountPath, 'native_dependencies.tar.gz'), 'data');
+      },
+    });
+
+    await prepareDependencyArchive(baseDir, 'host', 'script', () => {}, runner);
+
+    expect(calls.build).to.have.length(1);
+    expect(calls.build[0].cwd).to.equal(baseDir);
+    expect(calls.build[0].args).to.include('--network');
+    expect(calls.build[0].args).to.include('host');
+  });
+
+  it('skips the py-files copy when the docker run produces nothing', async () => {
+    const logs: string[] = [];
+    const { runner } = makeRunner({ imageExists: true });
+
+    await prepareDependencyArchive(baseDir, 'default', 'function', (m) => logs.push(m), runner);
+
+    expect(existsSync(path.join(baseDir, 'payload', 'py-files'))).to.equal(false);
+    expect(logs.some((m) => m.includes('Skipping py-files copy'))).to.equal(true);
   });
 });

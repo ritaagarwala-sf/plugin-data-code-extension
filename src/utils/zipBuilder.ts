@@ -43,13 +43,16 @@ export type ZipResult = {
 };
 
 /**
- * Returns true when `requirements.txt` (in the parent of `directory`) exists
- * and has at least one non-comment, non-blank line.
+ * Returns true when `<baseDirectory>/requirements.txt` exists and has at least
+ * one non-comment, non-blank line.
  *
- * Mirrors `has_nonempty_requirements_file` in `datacustomcode/deploy.py`.
+ * Mirrors `has_nonempty_requirements_file` in `datacustomcode/deploy.py`. The
+ * Python equivalent passes `dirname(payload_dir)` and looks for
+ * `requirements.txt` next to the SDK config — this signature accepts the same
+ * resolved base directory so callers stay consistent.
  */
-export function hasNonemptyRequirementsFile(directory: string): boolean {
-  const requirementsPath = path.join(path.dirname(directory), 'requirements.txt');
+export function hasNonemptyRequirementsFile(baseDirectory: string): boolean {
+  const requirementsPath = path.join(baseDirectory, 'requirements.txt');
   try {
     if (!existsSync(requirementsPath) || !statSync(requirementsPath).isFile()) {
       return false;
@@ -85,14 +88,35 @@ export function dockerRunCmd(network: string, tempDir: string): string[] {
   return args;
 }
 
-async function dockerImageExists(): Promise<boolean> {
-  try {
-    const { stdout } = await spawnAsync('docker', ['images', '-q', DOCKER_IMAGE_NAME]);
-    return stdout.trim().length > 0;
-  } catch {
-    return false;
-  }
-}
+/**
+ * Thin seam over the three docker CLI invocations the dependency builder needs.
+ * Real callers use `defaultDockerRunner`. Tests can pass a fake to assert the
+ * file-handling logic without requiring a working docker daemon.
+ */
+export type DockerRunner = {
+  imageExists: () => Promise<boolean>;
+  build: (args: string[], opts: { env: NodeJS.ProcessEnv; cwd: string }) => Promise<void>;
+  run: (args: string[], opts: { env: NodeJS.ProcessEnv }) => Promise<void>;
+};
+
+export const defaultDockerRunner: DockerRunner = {
+  async imageExists(): Promise<boolean> {
+    try {
+      const { stdout } = await spawnAsync('docker', ['images', '-q', DOCKER_IMAGE_NAME]);
+      return stdout.trim().length > 0;
+    } catch {
+      return false;
+    }
+  },
+  async build(args, opts): Promise<void> {
+    debug('docker build: %o', args);
+    await spawnAsync('docker', args, opts);
+  },
+  async run(args, opts): Promise<void> {
+    debug('docker run: %o', args);
+    await spawnAsync('docker', args, opts);
+  },
+};
 
 async function copyFile(src: string, dest: string): Promise<void> {
   const data = new Uint8Array(await readFile(src));
@@ -119,55 +143,63 @@ async function copyTree(src: string, dest: string): Promise<void> {
 
 /**
  * Runs the Docker-based dependency builder. For scripts, copies the resulting
- * `native_dependencies.tar.gz` into `payload/archives/`. For functions, copies
- * the generated `py-files/` tree into `payload/py-files/`.
+ * `native_dependencies.tar.gz` into `<baseDirectory>/payload/archives/`. For
+ * functions, copies the generated `py-files/` tree into
+ * `<baseDirectory>/payload/py-files/`.
  *
- * Mirrors `prepare_dependency_archive` in `datacustomcode/deploy.py`.
+ * Mirrors `prepare_dependency_archive` in `datacustomcode/deploy.py`. Resolves
+ * `requirements.txt`, `build_native_dependencies.sh`, and the destination
+ * directories under `baseDirectory` so the function works regardless of the
+ * caller's current working directory.
  */
 export async function prepareDependencyArchive(
-  directory: string,
+  baseDirectory: string,
   dockerNetwork: string,
   packageType: CodeType,
-  log: (message: string) => void = (): void => {}
+  log: (message: string) => void = (): void => {},
+  runner: DockerRunner = defaultDockerRunner
 ): Promise<void> {
   const dockerEnv = { ...process.env, ...PLATFORM_ENV };
-  const imageExists = await dockerImageExists();
+  const imageExists = await runner.imageExists();
+
+  const requirementsSrc = path.join(baseDirectory, 'requirements.txt');
+  const buildScriptSrc = path.join(baseDirectory, 'build_native_dependencies.sh');
+  const archiveDest = path.join(baseDirectory, DEPENDENCIES_ARCHIVE_PATH);
+  const pyFilesDest = path.join(baseDirectory, PY_FILES_PATH);
 
   if (!imageExists) {
     log(`Building docker image with docker network: ${dockerNetwork}...`);
-    const buildArgs = dockerBuildCmd(dockerNetwork);
-    debug('docker build: %o', buildArgs);
-    await spawnAsync('docker', buildArgs, { env: dockerEnv });
+    // The Dockerfile is referenced by relative path, so the build must run from
+    // the base directory where Dockerfile.dependencies lives.
+    await runner.build(dockerBuildCmd(dockerNetwork), { env: dockerEnv, cwd: baseDirectory });
   }
 
   const tempDir = mkdtempSync(path.join(tmpdir(), 'datacustomcode-deps-'));
   try {
     log(`Building dependencies archive with docker network: ${dockerNetwork}`);
-    await copyFile('requirements.txt', path.join(tempDir, 'requirements.txt'));
-    await copyFile('build_native_dependencies.sh', path.join(tempDir, 'build_native_dependencies.sh'));
+    await copyFile(requirementsSrc, path.join(tempDir, 'requirements.txt'));
+    await copyFile(buildScriptSrc, path.join(tempDir, 'build_native_dependencies.sh'));
 
-    const runArgs = dockerRunCmd(dockerNetwork, tempDir);
-    debug('docker run: %o', runArgs);
-    await spawnAsync('docker', runArgs, { env: dockerEnv });
+    await runner.run(dockerRunCmd(dockerNetwork, tempDir), { env: dockerEnv });
 
     if (packageType === 'function') {
       const sourcePyFiles = path.join(tempDir, 'py-files');
       if (existsSync(sourcePyFiles)) {
         log(`py-files directory found at ${sourcePyFiles}. Copying to payload directory...`);
-        await mkdir(path.dirname(PY_FILES_PATH), { recursive: true });
-        if (existsSync(PY_FILES_PATH)) {
-          rmSync(PY_FILES_PATH, { recursive: true, force: true });
+        await mkdir(path.dirname(pyFilesDest), { recursive: true });
+        if (existsSync(pyFilesDest)) {
+          rmSync(pyFilesDest, { recursive: true, force: true });
         }
-        await copyTree(sourcePyFiles, PY_FILES_PATH);
-        log(`py-files copied to ${PY_FILES_PATH}`);
+        await copyTree(sourcePyFiles, pyFilesDest);
+        log(`py-files copied to ${pyFilesDest}`);
       } else {
         log(`No py-files directory found at ${sourcePyFiles}. Skipping py-files copy.`);
       }
     } else {
       const archivesTempPath = path.join(tempDir, DEPENDENCIES_ARCHIVE_FULL_NAME);
-      await mkdir(path.dirname(DEPENDENCIES_ARCHIVE_PATH), { recursive: true });
-      await copyFile(archivesTempPath, DEPENDENCIES_ARCHIVE_PATH);
-      log(`Dependencies archived to ${DEPENDENCIES_ARCHIVE_PATH}`);
+      await mkdir(path.dirname(archiveDest), { recursive: true });
+      await copyFile(archivesTempPath, archiveDest);
+      log(`Dependencies archived to ${archiveDest}`);
     }
   } finally {
     // ignore_cleanup_errors equivalent: Docker may leave files the host can't
@@ -181,16 +213,38 @@ export async function prepareDependencyArchive(
 }
 
 async function collectFiles(directory: string): Promise<string[]> {
+  // Match Python `os.walk(path)` (default `followlinks=False`) + `zipfile.write`:
+  // - Real subdirectories are recursed.
+  // - Directory symlinks are NOT recursed (Python `is_dir(follow_symlinks=False)` is False).
+  // - Regular files and file symlinks are both included; their contents are read
+  //   through the symlink so the archive stores a regular-file entry (matching
+  //   the SDK's existing server-side unzip handling).
   async function walk(current: string): Promise<string[]> {
     const entries = await readdir(current, { withFileTypes: true });
     const nested = await Promise.all(
       entries.map(async (entry) => {
         const full = path.join(current, entry.name);
+        if (entry.name === '.DS_Store') {
+          return [];
+        }
         if (entry.isDirectory()) {
           return walk(full);
         }
-        if (entry.isFile() && entry.name !== '.DS_Store') {
+        if (entry.isFile()) {
           return [full];
+        }
+        if (entry.isSymbolicLink()) {
+          // Resolve the symlink target. Skip dangling links and links that
+          // point at directories (Python's default os.walk would treat those
+          // as files and the subsequent open() would fail).
+          try {
+            const targetStat = await stat(full);
+            if (targetStat.isFile()) {
+              return [full];
+            }
+          } catch {
+            return [];
+          }
         }
         return [];
       })
@@ -216,14 +270,21 @@ export async function createZip(directory: string): Promise<ZipResult> {
       // Use forward slashes inside the zip so the archive is portable across
       // platforms (Python's zipfile follows the same convention).
       const portableName = arcname.split(path.sep).join('/');
+      // stat (not lstat) so symlinked files report the target's permissions.
       const [data, entryStat] = await Promise.all([readFile(absPath), stat(absPath)]);
-      return { portableName, data: new Uint8Array(data), mtime: entryStat.mtime };
+      return {
+        portableName,
+        data: new Uint8Array(data),
+        mtime: entryStat.mtime,
+        unixPermissions: entryStat.mode & 0o777,
+      };
     })
   );
   for (const entry of entries) {
     archive.file(entry.portableName, entry.data, {
       date: entry.mtime,
       createFolders: false,
+      unixPermissions: entry.unixPermissions,
     });
   }
 
@@ -271,10 +332,10 @@ export async function zip(
   const baseDirectory = findBaseDirectory(directory);
   const packageType = await getPackageType(baseDirectory);
 
-  if (hasNonemptyRequirementsFile(directory)) {
-    await prepareDependencyArchive(directory, dockerNetwork, packageType, log);
+  if (hasNonemptyRequirementsFile(baseDirectory)) {
+    await prepareDependencyArchive(baseDirectory, dockerNetwork, packageType, log);
   } else {
-    log(`Skipping dependency archive: requirements.txt is missing or empty in ${directory}`);
+    log(`Skipping dependency archive: requirements.txt is missing or empty in ${baseDirectory}`);
   }
 
   debug('zipping directory %s', directory);
