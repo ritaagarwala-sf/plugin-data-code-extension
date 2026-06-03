@@ -1,3 +1,9 @@
+## [1.2.1](https://github.com/salesforcecli/plugin-data-code-extension/compare/1.2.0...1.2.1) (2026-06-03)
+
+### Bug Fixes
+
+- allow --use-in-feature override for function deploy ([e26d4ff](https://github.com/salesforcecli/plugin-data-code-extension/commit/e26d4ffd5c031654be9ad665d1f50f1bb4272b3b))
+
 # [1.2.0](https://github.com/salesforcecli/plugin-data-code-extension/compare/1.1.1...1.2.0) (2026-05-28)
 
 ### Features
