@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 import { Messages } from '@salesforce/core';
-import { Flags } from '@salesforce/sf-plugins-core';
 import { DeployBase } from '../../../base/deployBase.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
@@ -29,10 +28,6 @@ export default class Deploy extends DeployBase {
 
   public static readonly flags = {
     ...DeployBase.flags,
-    'use-in-feature': Flags.string({
-      summary: 'Feature where this function will be used.',
-      default: 'SearchIndexChunking',
-    }),
   };
 
   // eslint-disable-next-line class-methods-use-this
