@@ -83,45 +83,38 @@ describe('zipBuilder.hasNonemptyRequirementsFile', () => {
 });
 
 describe('zipBuilder docker command builders', () => {
+  const IMAGE = 'datacloud-custom-code-dependency-builder';
+
   it('builds a docker build command without --network for the default network', () => {
-    expect(dockerBuildCmd('default')).to.deep.equal([
-      'build',
-      '-t',
-      'datacloud-custom-code-dependency-builder',
-      '--file',
-      'Dockerfile.dependencies',
-      '.',
-    ]);
+    expect(dockerBuildCmd('default')).to.deep.equal(['build', '-t', IMAGE, '--file', 'Dockerfile.dependencies', '.']);
   });
 
-  it('appends --network when not the default', () => {
-    expect(dockerBuildCmd('host')).to.deep.equal([
-      'build',
-      '-t',
-      'datacloud-custom-code-dependency-builder',
-      '--file',
-      'Dockerfile.dependencies',
-      '.',
-      '--network',
-      'host',
-    ]);
+  it('places --network before the build-context path so docker parses it as an option', () => {
+    const args = dockerBuildCmd('host');
+    expect(args).to.deep.equal(['build', '-t', IMAGE, '--file', 'Dockerfile.dependencies', '--network', 'host', '.']);
+    // `docker build [OPTIONS] PATH`: the context '.' must be the final arg and
+    // --network must precede it, never trail it.
+    expect(args.indexOf('--network')).to.be.lessThan(args.indexOf('.'));
+    expect(args[args.length - 1]).to.equal('.');
   });
 
   it('builds a docker run command with the temp dir mounted', () => {
-    expect(dockerRunCmd('default', '/tmp/work')).to.deep.equal([
-      'run',
-      '--rm',
-      '-v',
-      '/tmp/work:/workspace',
-      'datacloud-custom-code-dependency-builder',
-    ]);
+    expect(dockerRunCmd('default', '/tmp/work')).to.deep.equal(['run', '--rm', '-v', '/tmp/work:/workspace', IMAGE]);
+  });
+
+  it('places --network before the image name so docker parses it as an option, not a command', () => {
+    const args = dockerRunCmd('host', '/tmp/work');
+    expect(args).to.deep.equal(['run', '--rm', '-v', '/tmp/work:/workspace', '--network', 'host', IMAGE]);
+    // `docker run [OPTIONS] IMAGE [COMMAND]`: anything after the image is treated
+    // as the in-container command. --network must come before the image name.
+    expect(args.indexOf('--network')).to.be.lessThan(args.indexOf(IMAGE));
+    expect(args[args.length - 1]).to.equal(IMAGE);
   });
 
   it('normalizes Windows-style backslashes in the mount path', () => {
     const out = dockerRunCmd('host', 'C:\\Users\\x\\tmp');
     expect(out).to.include('C:/Users/x/tmp:/workspace');
-    expect(out).to.include('--network');
-    expect(out).to.include('host');
+    expect(out.indexOf('--network')).to.be.lessThan(out.indexOf(IMAGE));
   });
 });
 
@@ -410,5 +403,63 @@ describe('zipBuilder.prepareDependencyArchive', () => {
 
     expect(existsSync(path.join(baseDir, 'payload', 'py-files'))).to.equal(false);
     expect(logs.some((m) => m.includes('Skipping py-files copy'))).to.equal(true);
+  });
+
+  it('throws an actionable error (not ENOENT) when requirements.txt is missing', async () => {
+    rmSync(path.join(baseDir, 'requirements.txt'));
+    const { runner, calls } = makeRunner({ imageExists: true });
+
+    let caught: Error | undefined;
+    try {
+      await prepareDependencyArchive(baseDir, 'default', 'script', () => {}, runner);
+    } catch (err) {
+      caught = err as Error;
+    }
+
+    expect(caught, 'expected prepareDependencyArchive to throw').to.exist;
+    expect(caught!.name).to.equal('DependencyBuildFileMissing');
+    expect(caught!.message).to.match(/requirements\.txt/);
+    // Should fail before doing any docker work.
+    expect(calls.run).to.have.length(0);
+    expect(calls.build).to.have.length(0);
+  });
+
+  it('throws an actionable error when build_native_dependencies.sh is missing', async () => {
+    rmSync(path.join(baseDir, 'build_native_dependencies.sh'));
+    const { runner } = makeRunner({ imageExists: true });
+
+    let caught: Error | undefined;
+    try {
+      await prepareDependencyArchive(baseDir, 'default', 'script', () => {}, runner);
+    } catch (err) {
+      caught = err as Error;
+    }
+
+    expect(caught!.name).to.equal('DependencyBuildFileMissing');
+    expect(caught!.message).to.match(/build_native_dependencies\.sh/);
+  });
+
+  it('requires Dockerfile.dependencies only when the image must be built', async () => {
+    rmSync(path.join(baseDir, 'Dockerfile.dependencies'));
+
+    // imageExists=true: the missing Dockerfile should NOT block the run.
+    const present = makeRunner({
+      imageExists: true,
+      onRun: (mountPath) => writeFileSync(path.join(mountPath, 'native_dependencies.tar.gz'), 'data'),
+    });
+    await prepareDependencyArchive(baseDir, 'default', 'script', () => {}, present.runner);
+    expect(existsSync(path.join(baseDir, 'payload', 'archives', 'native_dependencies.tar.gz'))).to.equal(true);
+
+    // imageExists=false: now the missing Dockerfile must raise the actionable error.
+    const missing = makeRunner({ imageExists: false });
+    let caught: Error | undefined;
+    try {
+      await prepareDependencyArchive(baseDir, 'default', 'script', () => {}, missing.runner);
+    } catch (err) {
+      caught = err as Error;
+    }
+    expect(caught!.name).to.equal('DependencyBuildFileMissing');
+    expect(caught!.message).to.match(/Dockerfile\.dependencies/);
+    expect(missing.calls.build).to.have.length(0);
   });
 });

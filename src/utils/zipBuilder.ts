@@ -71,20 +71,28 @@ export function hasNonemptyRequirementsFile(baseDirectory: string): boolean {
 }
 
 export function dockerBuildCmd(network: string): string[] {
-  const args = ['build', '-t', DOCKER_IMAGE_NAME, '--file', 'Dockerfile.dependencies', '.'];
+  // `docker build [OPTIONS] PATH` — every option (including --network) must come
+  // before the build-context path ('.'), otherwise Docker rejects the trailing
+  // flag. The Python original appended it after the path; we correct that here.
+  const args = ['build', '-t', DOCKER_IMAGE_NAME, '--file', 'Dockerfile.dependencies'];
   if (network !== 'default') {
     args.push('--network', network);
   }
+  args.push('.');
   return args;
 }
 
 export function dockerRunCmd(network: string, tempDir: string): string[] {
+  // `docker run [OPTIONS] IMAGE [COMMAND]` — options must precede the image name.
+  // Placing --network after the image would make Docker treat it as the
+  // in-container command/args, so we insert it before DOCKER_IMAGE_NAME.
   // Docker expects forward slashes in the volume mount path, even on Windows.
   const mountPath = tempDir.replace(/\\/g, '/');
-  const args = ['run', '--rm', '-v', `${mountPath}:/workspace`, DOCKER_IMAGE_NAME];
+  const args = ['run', '--rm', '-v', `${mountPath}:/workspace`];
   if (network !== 'default') {
     args.push('--network', network);
   }
+  args.push(DOCKER_IMAGE_NAME);
   return args;
 }
 
@@ -117,6 +125,24 @@ export const defaultDockerRunner: DockerRunner = {
     await spawnAsync('docker', args, opts);
   },
 };
+
+/**
+ * Throws an actionable SfError when a file the dependency builder relies on is
+ * missing, instead of letting a downstream copyFile/spawn surface a raw ENOENT.
+ */
+function assertBuildFileExists(label: string, filePath: string): void {
+  if (!existsSync(filePath)) {
+    throw new SfError(
+      `Cannot build the dependency archive: required file '${label}' was not found at '${filePath}'.`,
+      'DependencyBuildFileMissing',
+      [
+        "Run 'init' to scaffold the package, which generates requirements.txt and build_native_dependencies.sh",
+        'Confirm requirements.txt, build_native_dependencies.sh, and Dockerfile.dependencies exist in the package base directory',
+        'If you removed these files, restore them from the template before zipping a package with dependencies',
+      ]
+    );
+  }
+}
 
 async function copyFile(src: string, dest: string): Promise<void> {
   const data = new Uint8Array(await readFile(src));
@@ -160,17 +186,25 @@ export async function prepareDependencyArchive(
   runner: DockerRunner = defaultDockerRunner
 ): Promise<void> {
   const dockerEnv = { ...process.env, ...PLATFORM_ENV };
-  const imageExists = await runner.imageExists();
 
   const requirementsSrc = path.join(baseDirectory, 'requirements.txt');
   const buildScriptSrc = path.join(baseDirectory, 'build_native_dependencies.sh');
+  const dockerfileSrc = path.join(baseDirectory, 'Dockerfile.dependencies');
   const archiveDest = path.join(baseDirectory, DEPENDENCIES_ARCHIVE_PATH);
   const pyFilesDest = path.join(baseDirectory, PY_FILES_PATH);
 
+  // Fail fast with an actionable error rather than a raw ENOENT from a later
+  // copyFile/spawn if the scaffolding files the builder depends on are missing.
+  assertBuildFileExists('requirements.txt', requirementsSrc);
+  assertBuildFileExists('build_native_dependencies.sh', buildScriptSrc);
+
+  const imageExists = await runner.imageExists();
   if (!imageExists) {
+    // The image build references Dockerfile.dependencies by relative path, so it
+    // is only required when we actually have to build the image.
+    assertBuildFileExists('Dockerfile.dependencies', dockerfileSrc);
     log(`Building docker image with docker network: ${dockerNetwork}...`);
-    // The Dockerfile is referenced by relative path, so the build must run from
-    // the base directory where Dockerfile.dependencies lives.
+    // The build must run from the base directory where Dockerfile.dependencies lives.
     await runner.build(dockerBuildCmd(dockerNetwork), { env: dockerEnv, cwd: baseDirectory });
   }
 
