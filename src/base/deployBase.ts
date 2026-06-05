@@ -30,7 +30,6 @@ export type BaseDeployFlags = {
   'target-org': Org;
   'cpu-size': string;
   network?: string;
-  'use-in-feature'?: string;
 };
 
 export type DeployResult = SharedResultProps & {
@@ -130,7 +129,6 @@ export abstract class DeployBase<TFlags extends BaseDeployFlags = BaseDeployFlag
     const targetOrg = flags['target-org'];
     const cpuSize = flags['cpu-size'] || 'CPU_2XL';
     const network = flags.network;
-    const useInFeature = flags['use-in-feature'];
 
     if (packageDir.length === 0) {
       throw new SfError(messages.getMessage('error.flagEmpty', ['package-dir']), 'InvalidFlagValue');
@@ -160,8 +158,7 @@ export abstract class DeployBase<TFlags extends BaseDeployFlags = BaseDeployFlag
         packageDir,
         orgUsername,
         cpuSize,
-        network,
-        useInFeature
+        network
       );
 
       this.log(cmdMessages.getMessage('info.deploymentComplete', [name, version]));

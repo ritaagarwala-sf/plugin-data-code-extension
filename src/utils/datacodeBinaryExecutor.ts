@@ -105,8 +105,7 @@ export class DatacodeBinaryExecutor {
     packageDir: string,
     targetOrg: string,
     cpuSize: string,
-    network?: string,
-    useInFeature?: string
+    network?: string
   ): Promise<DatacodeDeployExecutionResult> {
     // Build args array for spawn (avoids shell-escaping issues and enables streaming)
     const args = [
@@ -127,10 +126,6 @@ export class DatacodeBinaryExecutor {
 
     if (network) {
       args.push('--network', network);
-    }
-
-    if (useInFeature) {
-      args.push('--use-in-feature', useInFeature);
     }
 
     return new Promise((resolve, reject) => {

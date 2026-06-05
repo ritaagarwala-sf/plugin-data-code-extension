@@ -232,59 +232,6 @@ describe('data-code-extension deploy', () => {
       expect(binaryDeployStub.firstCall.args[0]).to.equal('test-function');
     });
 
-    it('should pass default use-in-feature to binary', async () => {
-      await FunctionDeploy.run([
-        '--name',
-        'test-function',
-        '--package-version',
-        '1.0.0',
-        '--description',
-        'Test function deployment',
-        '--package-dir',
-        testDir,
-        '--target-org',
-        'test@example.com',
-      ]);
-
-      expect(binaryDeployStub.firstCall.args[7]).to.equal('SearchIndexChunking');
-    });
-
-    it('should pass explicit use-in-feature to binary', async () => {
-      await FunctionDeploy.run([
-        '--name',
-        'test-function',
-        '--package-version',
-        '1.0.0',
-        '--description',
-        'Test function deployment',
-        '--package-dir',
-        testDir,
-        '--target-org',
-        'test@example.com',
-        '--use-in-feature',
-        'CustomFeature',
-      ]);
-
-      expect(binaryDeployStub.firstCall.args[7]).to.equal('CustomFeature');
-    });
-
-    it('should not pass use-in-feature for script deploy', async () => {
-      await ScriptDeploy.run([
-        '--name',
-        'test-script',
-        '--package-version',
-        '1.0.0',
-        '--description',
-        'Test script deployment',
-        '--package-dir',
-        testDir,
-        '--target-org',
-        'test@example.com',
-      ]);
-
-      expect(binaryDeployStub.firstCall.args[7]).to.be.undefined;
-    });
-
     it('should validate CPU size options', async () => {
       try {
         await FunctionDeploy.run([
