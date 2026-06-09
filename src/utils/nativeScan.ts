@@ -588,7 +588,24 @@ export async function scanFileForImports(filePath: string): Promise<Set<string>>
     addTopLevelImport(moduleName, imports);
   }
 
-  return imports;
+  // Filter out local modules
+  const fileDir = path.dirname(filePath);
+  const checks = await Promise.all(
+    Array.from(imports).map(async (pkg) => ({
+      pkg,
+      isLocal: await pathExists(path.join(fileDir, `${pkg}.py`)),
+    }))
+  );
+
+  const filteredImports = new Set<string>();
+  for (const { pkg, isLocal } of checks) {
+    if (!isLocal) {
+      // Not a local module, keep it in the imports
+      filteredImports.add(pkg);
+    }
+  }
+
+  return filteredImports;
 }
 
 function addTopLevelImport(qualified: string, into: Set<string>): void {

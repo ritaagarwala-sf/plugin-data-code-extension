@@ -267,6 +267,25 @@ describe('nativeScan: scanFileForImports', () => {
     expect([...imports].sort()).to.deep.equal(['numpy', 'pandas']);
     await fs.rm(tmp, { recursive: true, force: true });
   });
+
+  it('filters out local modules that exist as .py files in the same directory', async () => {
+    const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'imports-'));
+    const file = path.join(tmp, 'entrypoint.py');
+    // Create a local module file that should be filtered out
+    await fs.writeFile(path.join(tmp, 'helper.py'), '# local helper module\n');
+    await fs.writeFile(
+      file,
+      [
+        'import pandas',
+        'import numpy',
+        'import helper', // local module - should be filtered
+        'from helper import some_function', // also local - should be filtered
+      ].join('\n')
+    );
+    const imports = await scanFileForImports(file);
+    expect([...imports].sort()).to.deep.equal(['numpy', 'pandas']);
+    await fs.rm(tmp, { recursive: true, force: true });
+  });
 });
 
 describe('nativeScan: writeRequirementsFile', () => {
