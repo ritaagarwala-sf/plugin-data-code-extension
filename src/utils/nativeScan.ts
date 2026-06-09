@@ -593,7 +593,7 @@ export async function scanFileForImports(filePath: string): Promise<Set<string>>
   const checks = await Promise.all(
     Array.from(imports).map(async (pkg) => ({
       pkg,
-      isLocal: await pathExists(path.join(fileDir, `${pkg}.py`)),
+      isLocal: await isLocalModule(pkg, fileDir),
     }))
   );
 
@@ -775,6 +775,33 @@ async function pathExists(p: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/**
+ * Check if an import name resolves to a local module in the same directory.
+ * 1. pkg.py - module file
+ * 2. pkg/ directory with .py files - package (with or without __init__.py)
+ */
+async function isLocalModule(pkg: string, fileDir: string): Promise<boolean> {
+  const [isModuleFile, isPackageDir] = await Promise.all([
+    pathExists(path.join(fileDir, `${pkg}.py`)),
+    (async (): Promise<boolean> => {
+      const pkgDir = path.join(fileDir, pkg);
+      try {
+        const stat = await fs.stat(pkgDir);
+        if (!stat.isDirectory()) {
+          return false;
+        }
+        // Check if directory contains any Python files
+        const entries = await fs.readdir(pkgDir);
+        return entries.some((entry) => entry.endsWith('.py'));
+      } catch {
+        return false;
+      }
+    })(),
+  ]);
+
+  return isModuleFile || isPackageDir;
 }
 
 function dirExistsSync(p: string): boolean {
