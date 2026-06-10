@@ -19,7 +19,6 @@ export { PipChecker, type PipPackageInfo } from './utils/pipChecker.js';
 export { DatacodeBinaryChecker, type DatacodeBinaryInfo } from './utils/datacodeBinaryChecker.js';
 export {
   DatacodeBinaryExecutor,
-  type DatacodeZipExecutionResult,
   type DatacodeDeployExecutionResult,
   type DatacodeRunExecutionResult,
 } from './utils/datacodeBinaryExecutor.js';
@@ -39,3 +38,11 @@ export {
   type ScanPermissions,
 } from './utils/nativeScan.js';
 export type { ScanResult } from './base/scanBase.js';
+export {
+  createZip,
+  hasNonemptyRequirementsFile,
+  prepareDependencyArchive,
+  zip as zipPackage,
+  zipWithSfError,
+  type ZipResult as ZipBuilderResult,
+} from './utils/zipBuilder.js';

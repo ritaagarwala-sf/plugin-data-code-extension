@@ -16,19 +16,33 @@
 import { existsSync } from 'node:fs';
 import { SfCommand } from '@salesforce/sf-plugins-core';
 import { Messages, SfError } from '@salesforce/core';
-import { DatacodeBinaryExecutor, type DatacodeZipExecutionResult } from '../utils/datacodeBinaryExecutor.js';
-import { checkEnvironment } from '../utils/environmentChecker.js';
-import { type SharedResultProps } from './types.js';
+import { zipWithSfError, type ZipResult as ZipBuilderResult } from '../utils/zipBuilder.js';
 
 export type BaseZipFlags = {
   'package-dir': string;
   network?: string;
 };
 
-export type ZipResult = SharedResultProps & {
-  archivePath?: string;
-  executionResult?: DatacodeZipExecutionResult;
+export type ZipResult = {
+  success: boolean;
+  codeType: 'script' | 'function';
+  packageDir: string;
+  archivePath: string;
+  fileCount: number;
+  archiveSizeBytes: number;
+  message: string;
 };
+
+function formatBytes(bytes: number): string {
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let value = bytes;
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+  return `${value.toFixed(unit === 0 ? 0 : 2)} ${units[unit]}`;
+}
 
 // eslint-disable-next-line sf-plugin/command-summary, sf-plugin/command-example
 export abstract class ZipBase extends SfCommand<ZipResult> {
@@ -39,7 +53,7 @@ export abstract class ZipBase extends SfCommand<ZipResult> {
     const codeType = this.getCodeType();
     const messages = this.getMessages();
     const packageDir = flags['package-dir'];
-    const network = flags.network;
+    const network = flags.network ?? 'default';
 
     if (!existsSync(packageDir)) {
       throw new SfError(
@@ -50,45 +64,25 @@ export abstract class ZipBase extends SfCommand<ZipResult> {
     }
 
     try {
-      const { pythonInfo, packageInfo, binaryInfo } = await checkEnvironment(
-        this.spinner,
-        this.log.bind(this),
-        messages
-      );
-
       this.spinner.start(messages.getMessage('info.executingZip'));
-      const executionResult = await DatacodeBinaryExecutor.executeBinaryZip(packageDir, network);
-
+      const result: ZipBuilderResult = await zipWithSfError(packageDir, network, this.log.bind(this));
       this.spinner.stop();
 
-      if (executionResult.archivePath) {
-        this.log(messages.getMessage('info.archiveCreated', [executionResult.archivePath]));
-      }
-
-      if (executionResult.fileCount !== undefined) {
-        this.log(messages.getMessage('info.filesIncluded', [executionResult.fileCount.toString()]));
-      }
-
-      if (executionResult.archiveSize) {
-        this.log(messages.getMessage('info.archiveSize', [executionResult.archiveSize]));
-      }
+      this.log(messages.getMessage('info.archiveCreated', [result.archivePath]));
+      this.log(messages.getMessage('info.filesIncluded', [result.fileCount.toString()]));
+      this.log(messages.getMessage('info.archiveSize', [formatBytes(result.archiveSizeBytes)]));
 
       return {
         success: true,
-        pythonVersion: pythonInfo,
-        packageInfo,
-        binaryInfo,
         codeType,
         packageDir,
-        archivePath: executionResult.archivePath,
-        executionResult,
+        archivePath: result.archivePath,
+        fileCount: result.fileCount,
+        archiveSizeBytes: result.archiveSizeBytes,
         message: messages.getMessage('info.zipCompleted'),
       };
     } catch (error) {
       this.spinner.stop();
-
-      // The error will be properly handled by the Salesforce CLI framework
-      // as an SfError with actions, so we just throw it
       throw error;
     }
   }
