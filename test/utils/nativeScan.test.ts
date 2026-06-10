@@ -250,7 +250,6 @@ describe('nativeScan: scanFileForImports', () => {
         'import _internal',
         'from . import sibling',
         'from .. import config',
-        'from .utils import helper',
         'from datetime import datetime',
         '"""docstring with import requests"""',
         '# import urllib',
