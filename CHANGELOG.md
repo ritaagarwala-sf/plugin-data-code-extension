@@ -1,3 +1,14 @@
+# [1.3.0](https://github.com/salesforcecli/plugin-data-code-extension/compare/1.2.1...1.3.0) (2026-06-10)
+
+### Bug Fixes
+
+- **zip:** address PR review on native zip port ([c7b679b](https://github.com/salesforcecli/plugin-data-code-extension/commit/c7b679b5b6164a6e655fdf8379aa00b7100e6eff)), closes [#22](https://github.com/salesforcecli/plugin-data-code-extension/issues/22)
+- **zip:** correct docker --network ordering and verify build files ([59d140b](https://github.com/salesforcecli/plugin-data-code-extension/commit/59d140bf3546ea91439fce30980c7f0193a493d2))
+
+### Features
+
+- port zip command from Python to native TypeScript ([7d99436](https://github.com/salesforcecli/plugin-data-code-extension/commit/7d994362616704ddc2a74ace2eac25f2b423b987))
+
 ## [1.2.1](https://github.com/salesforcecli/plugin-data-code-extension/compare/1.2.0...1.2.1) (2026-06-03)
 
 ### Bug Fixes
