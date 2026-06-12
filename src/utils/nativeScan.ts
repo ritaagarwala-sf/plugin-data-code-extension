@@ -67,238 +67,6 @@ const SDK_CONFIG_FILE = 'sdk_config.json';
 
 const DATA_ACCESS_METHODS = new Set(['read_dlo', 'read_dmo', 'write_to_dlo', 'write_to_dmo']);
 
-/**
- * Python stdlib module names to exclude from requirements.txt.
- *
- * Mirrors `sys.stdlib_module_names` from the Python 3.11 runtimes the SDK supports.
- * Using the stdlib names of this version; if a package becomes stdlib in a
- * later version we still want to drop it (it's not on PyPI and shipping it as a requirement
- * would break installs on the runtime).
- */
-const PYTHON_STDLIB_MODULES = new Set<string>([
-  '__future__',
-  '_ast',
-  '_thread',
-  'abc',
-  'aifc',
-  'antigravity',
-  'argparse',
-  'array',
-  'ast',
-  'asynchat',
-  'asyncio',
-  'asyncore',
-  'atexit',
-  'audioop',
-  'base64',
-  'bdb',
-  'binascii',
-  'binhex',
-  'bisect',
-  'builtins',
-  'bz2',
-  'cProfile',
-  'calendar',
-  'cgi',
-  'cgitb',
-  'chunk',
-  'cmath',
-  'cmd',
-  'code',
-  'codecs',
-  'codeop',
-  'collections',
-  'colorsys',
-  'compileall',
-  'concurrent',
-  'configparser',
-  'contextlib',
-  'contextvars',
-  'copy',
-  'copyreg',
-  'crypt',
-  'csv',
-  'ctypes',
-  'curses',
-  'dataclasses',
-  'datetime',
-  'dbm',
-  'decimal',
-  'difflib',
-  'dis',
-  'distutils',
-  'doctest',
-  'email',
-  'encodings',
-  'ensurepip',
-  'enum',
-  'errno',
-  'faulthandler',
-  'fcntl',
-  'filecmp',
-  'fileinput',
-  'fnmatch',
-  'fractions',
-  'ftplib',
-  'functools',
-  'gc',
-  'genericpath',
-  'getopt',
-  'getpass',
-  'gettext',
-  'glob',
-  'graphlib',
-  'grp',
-  'gzip',
-  'hashlib',
-  'heapq',
-  'hmac',
-  'html',
-  'http',
-  'idlelib',
-  'imaplib',
-  'imghdr',
-  'imp',
-  'importlib',
-  'inspect',
-  'io',
-  'ipaddress',
-  'itertools',
-  'json',
-  'keyword',
-  'lib2to3',
-  'linecache',
-  'locale',
-  'logging',
-  'lzma',
-  'mailbox',
-  'mailcap',
-  'marshal',
-  'math',
-  'mimetypes',
-  'mmap',
-  'modulefinder',
-  'msilib',
-  'msvcrt',
-  'multiprocessing',
-  'netrc',
-  'nis',
-  'nntplib',
-  'nt',
-  'ntpath',
-  'nturl2path',
-  'numbers',
-  'opcode',
-  'operator',
-  'optparse',
-  'os',
-  'ossaudiodev',
-  'pathlib',
-  'pdb',
-  'pickle',
-  'pickletools',
-  'pipes',
-  'pkgutil',
-  'platform',
-  'plistlib',
-  'poplib',
-  'posix',
-  'posixpath',
-  'pprint',
-  'profile',
-  'pstats',
-  'pty',
-  'pwd',
-  'py_compile',
-  'pyclbr',
-  'pydoc',
-  'pydoc_data',
-  'pyexpat',
-  'queue',
-  'quopri',
-  'random',
-  're',
-  'readline',
-  'reprlib',
-  'resource',
-  'rlcompleter',
-  'runpy',
-  'sched',
-  'secrets',
-  'select',
-  'selectors',
-  'shelve',
-  'shlex',
-  'shutil',
-  'signal',
-  'site',
-  'smtpd',
-  'smtplib',
-  'sndhdr',
-  'socket',
-  'socketserver',
-  'spwd',
-  'sqlite3',
-  'sre_compile',
-  'sre_constants',
-  'sre_parse',
-  'ssl',
-  'stat',
-  'statistics',
-  'string',
-  'stringprep',
-  'struct',
-  'subprocess',
-  'sunau',
-  'symtable',
-  'sys',
-  'sysconfig',
-  'syslog',
-  'tabnanny',
-  'tarfile',
-  'telnetlib',
-  'tempfile',
-  'termios',
-  'textwrap',
-  'this',
-  'threading',
-  'time',
-  'timeit',
-  'tkinter',
-  'token',
-  'tokenize',
-  'tomllib',
-  'trace',
-  'traceback',
-  'tracemalloc',
-  'tty',
-  'turtle',
-  'turtledemo',
-  'types',
-  'typing',
-  'unicodedata',
-  'unittest',
-  'urllib',
-  'uu',
-  'uuid',
-  'venv',
-  'warnings',
-  'wave',
-  'weakref',
-  'webbrowser',
-  'winreg',
-  'winsound',
-  'wsgiref',
-  'xdrlib',
-  'xml',
-  'xmlrpc',
-  'zipapp',
-  'zipfile',
-  'zipimport',
-  'zlib',
-  'zoneinfo',
-]);
-
 const EXCLUDED_PACKAGES = new Set<string>(['datacustomcode', 'pyspark']);
 
 /** Mirror of `datacustomcode/scan.py:get_sdk_config_path`. */
@@ -552,52 +320,40 @@ function validateAccessLayer(calls: DataAccessLayerCalls): void {
 /**
  * Mirror of `datacustomcode/scan.py:ImportVisitor.scan_file_for_imports`.
  *
- * Extracts top-level import names from `import X[, Y]` and `from X import …` statements,
- * dropping stdlib modules, packages starting with `_`, and the SDK's own packages.
- * Skips relative imports (`from . import x`) since they aren't PyPI dependencies.
+ * This function uses pipreqs to scan Python files for external package dependencies.
+ * - Scans all Python files in the directory
+ * - Extracts import statements
+ * - Filters out stdlib modules
+ * - Filters out local modules
  */
 export async function scanFileForImports(filePath: string): Promise<Set<string>> {
-  const code = await fs.readFile(filePath, 'utf8');
-  const imports = new Set<string>();
+  const fileDir = path.dirname(filePath);
 
-  // Strip docstrings/triple-quoted blocks and `#`-style comments to avoid false positives.
-  const stripped = code
-    .replace(/"""[\s\S]*?"""/g, '')
-    .replace(/'''[\s\S]*?'''/g, '')
-    .replace(/(^|\s)#.*$/gm, '$1');
+  // scan the directory containing the entrypoint.py file
+  const { execFile } = await import('node:child_process');
+  const { promisify } = await import('node:util');
+  const execFileAsync = promisify(execFile);
 
-  // `import a, b.c as alias`
-  const importRegex = /^[ \t]*import[ \t]+([^\n#]+)/gm;
-  let m: RegExpExecArray | null;
-  while ((m = importRegex.exec(stripped)) !== null) {
-    for (const piece of m[1].split(',')) {
-      const name = piece
-        .trim()
-        .split(/\s+as\s+/)[0]
-        .trim();
-      if (!name) continue;
-      addTopLevelImport(name, imports);
+  try {
+    const { stdout } = await execFileAsync('pipreqs', ['--print', '--mode', 'no-pin', fileDir]);
+
+    const packages = new Set<string>();
+    for (const line of stdout.split('\n')) {
+      const pkg = line.trim().toLowerCase();
+      if (pkg && !EXCLUDED_PACKAGES.has(pkg)) {
+        packages.add(pkg);
+      }
     }
+
+    return packages;
+  } catch (error) {
+    const err = error as { message: string; stderr?: string; stdout?: string };
+    const details = err.stderr ?? err.stdout ?? err.message;
+    throw new SfError(
+      `Failed to scan imports using pipreqs: ${details}. Hint: ensure 'pipreqs' is installed in the Python environment.`,
+      'PipreqsScanError'
+    );
   }
-
-  // `from a.b import c[, d]`. Skip relative imports (`from . import …`).
-  const fromRegex = /^[ \t]*from[ \t]+([^\s]+)[ \t]+import[ \t]/gm;
-  while ((m = fromRegex.exec(stripped)) !== null) {
-    const moduleName = m[1].trim();
-    if (moduleName.startsWith('.')) continue;
-    addTopLevelImport(moduleName, imports);
-  }
-
-  return imports;
-}
-
-function addTopLevelImport(qualified: string, into: Set<string>): void {
-  const top = qualified.split('.')[0];
-  if (!top) return;
-  if (top.startsWith('_')) return;
-  if (PYTHON_STDLIB_MODULES.has(top)) return;
-  if (EXCLUDED_PACKAGES.has(top)) return;
-  into.add(top);
 }
 
 /**

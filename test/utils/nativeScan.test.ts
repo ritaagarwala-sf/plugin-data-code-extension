@@ -249,6 +249,7 @@ describe('nativeScan: scanFileForImports', () => {
         'from pyspark.sql.functions import col',
         'import _internal',
         'from . import sibling',
+        'from .. import config',
         'from datetime import datetime',
         '"""docstring with import requests"""',
         '# import urllib',
@@ -265,6 +266,48 @@ describe('nativeScan: scanFileForImports', () => {
     await fs.writeFile(file, 'import pandas, numpy as np, os\n');
     const imports = await scanFileForImports(file);
     expect([...imports].sort()).to.deep.equal(['numpy', 'pandas']);
+    await fs.rm(tmp, { recursive: true, force: true });
+  });
+
+  it('filters out local modules that exist as .py files in the same directory', async () => {
+    const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'imports-'));
+    const file = path.join(tmp, 'entrypoint.py');
+    await fs.writeFile(path.join(tmp, 'helper.py'), '# local helper module\n');
+    await fs.writeFile(
+      file,
+      ['import pandas', 'import numpy', 'import helper', 'from helper import some_function as f'].join('\n')
+    );
+    const imports = await scanFileForImports(file);
+    expect([...imports].sort()).to.deep.equal(['numpy', 'pandas']);
+    await fs.rm(tmp, { recursive: true, force: true });
+  });
+
+  it('filters out local packages that exist as subdirectories', async () => {
+    const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'imports-'));
+    const file = path.join(tmp, 'entrypoint.py');
+    await fs.mkdir(path.join(tmp, 'utils'), { recursive: true });
+    await fs.writeFile(path.join(tmp, 'utils', '__init__.py'), '# utils package\n');
+    await fs.writeFile(path.join(tmp, 'utils', 'helper.py'), 'def process(): pass\n');
+    await fs.writeFile(file, ['import pandas', 'import numpy', 'from utils import helper', 'import utils'].join('\n'));
+    const imports = await scanFileForImports(file);
+    expect([...imports].sort()).to.deep.equal(['numpy', 'pandas']);
+    await fs.rm(tmp, { recursive: true, force: true });
+  });
+
+  it('filters nested local packages by checking only top-level directory', async () => {
+    const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'imports-'));
+    const file = path.join(tmp, 'entrypoint.py');
+    // Create deeply nested local package structure
+    await fs.mkdir(path.join(tmp, 'utils', 'nested', 'deep'), { recursive: true });
+    await fs.writeFile(path.join(tmp, 'utils', '__init__.py'), '');
+    await fs.writeFile(path.join(tmp, 'utils', 'nested', '__init__.py'), '');
+    await fs.writeFile(path.join(tmp, 'utils', 'nested', 'deep', 'module.py'), 'def fn(): pass\n');
+    await fs.writeFile(
+      file,
+      ['import pandas', 'from utils.nested.deep import module', 'import utils.nested'].join('\n')
+    );
+    const imports = await scanFileForImports(file);
+    expect([...imports].sort()).to.deep.equal(['pandas']);
     await fs.rm(tmp, { recursive: true, force: true });
   });
 });
