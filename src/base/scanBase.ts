@@ -17,6 +17,7 @@ import path from 'node:path';
 import { SfCommand } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { executeNativeScan, type NativeScanResult } from '../utils/nativeScan.js';
+import { checkEnvironment, type EnvironmentCheckResult } from '../utils/environmentChecker.js';
 
 export type BaseScanFlags = {
   entrypoint?: string;
@@ -31,7 +32,7 @@ export type ScanResult = {
   workingDirectory: string;
   message: string;
   executionResult: NativeScanResult;
-};
+} & EnvironmentCheckResult;
 
 // eslint-disable-next-line sf-plugin/command-summary, sf-plugin/command-example
 export abstract class ScanBase extends SfCommand<ScanResult> {
@@ -45,6 +46,12 @@ export abstract class ScanBase extends SfCommand<ScanResult> {
     const workingDir = process.cwd();
 
     try {
+      const { pythonInfo, packageInfo, binaryInfo } = await checkEnvironment(
+        this.spinner,
+        this.log.bind(this),
+        messages
+      );
+
       this.spinner.start(messages.getMessage('info.executingScan'));
       const executionResult = await executeNativeScan({
         workingDir,
@@ -76,6 +83,9 @@ export abstract class ScanBase extends SfCommand<ScanResult> {
 
       return {
         success: true,
+        pythonInfo,
+        packageInfo,
+        binaryInfo,
         codeType,
         workingDirectory: workingDir,
         executionResult,

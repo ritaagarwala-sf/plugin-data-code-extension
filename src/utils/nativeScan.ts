@@ -317,6 +317,40 @@ function validateAccessLayer(calls: DataAccessLayerCalls): void {
   }
 }
 
+let pipreqsMock: ((fileDir: string) => Promise<string>) | null = null;
+
+/**
+ * Set a mock function for pipreqs execution.
+ * This is used for unit testing.
+ *
+ * @internal
+ */
+export function setPipreqsMock(mock: ((fileDir: string) => Promise<string>) | null): void {
+  pipreqsMock = mock;
+}
+
+export async function executePipreqs(fileDir: string): Promise<string> {
+  if (pipreqsMock) {
+    return pipreqsMock(fileDir);
+  }
+
+  const { execFile } = await import('node:child_process');
+  const { promisify } = await import('node:util');
+  const execFileAsync = promisify(execFile);
+
+  try {
+    const { stdout } = await execFileAsync('pipreqs', ['--print', '--mode', 'no-pin', fileDir]);
+    return stdout;
+  } catch (error) {
+    const err = error as { message: string; stderr?: string; stdout?: string };
+    const details = err.stderr ?? err.stdout ?? err.message;
+    throw new SfError(
+      `Failed to scan imports using pipreqs: ${details}. Hint: ensure 'pipreqs' is installed in the Python environment.`,
+      'PipreqsScanError'
+    );
+  }
+}
+
 /**
  * Mirror of `datacustomcode/scan.py:ImportVisitor.scan_file_for_imports`.
  *
@@ -328,32 +362,17 @@ function validateAccessLayer(calls: DataAccessLayerCalls): void {
  */
 export async function scanFileForImports(filePath: string): Promise<Set<string>> {
   const fileDir = path.dirname(filePath);
+  const stdout = await executePipreqs(fileDir);
 
-  // scan the directory containing the entrypoint.py file
-  const { execFile } = await import('node:child_process');
-  const { promisify } = await import('node:util');
-  const execFileAsync = promisify(execFile);
-
-  try {
-    const { stdout } = await execFileAsync('pipreqs', ['--print', '--mode', 'no-pin', fileDir]);
-
-    const packages = new Set<string>();
-    for (const line of stdout.split('\n')) {
-      const pkg = line.trim().toLowerCase();
-      if (pkg && !EXCLUDED_PACKAGES.has(pkg)) {
-        packages.add(pkg);
-      }
+  const packages = new Set<string>();
+  for (const line of stdout.split('\n')) {
+    const pkg = line.trim().toLowerCase();
+    if (pkg && !EXCLUDED_PACKAGES.has(pkg)) {
+      packages.add(pkg);
     }
-
-    return packages;
-  } catch (error) {
-    const err = error as { message: string; stderr?: string; stdout?: string };
-    const details = err.stderr ?? err.stdout ?? err.message;
-    throw new SfError(
-      `Failed to scan imports using pipreqs: ${details}. Hint: ensure 'pipreqs' is installed in the Python environment.`,
-      'PipreqsScanError'
-    );
   }
+
+  return packages;
 }
 
 /**

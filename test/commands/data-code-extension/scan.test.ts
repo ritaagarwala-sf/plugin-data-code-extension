@@ -19,6 +19,10 @@ import * as os from 'node:os';
 import { TestContext } from '@salesforce/core/testSetup';
 import { expect } from 'chai';
 import { stubSfCommandUx } from '@salesforce/sf-plugins-core';
+import { setPipreqsMock } from '../../../src/utils/nativeScan.js';
+import { PythonChecker } from '../../../src/utils/pythonChecker.js';
+import { PipChecker } from '../../../src/utils/pipChecker.js';
+import { DatacodeBinaryChecker } from '../../../src/utils/datacodeBinaryChecker.js';
 import ScriptScan from '../../../src/commands/data-code-extension/script/scan.js';
 import FunctionScan from '../../../src/commands/data-code-extension/function/scan.js';
 
@@ -52,10 +56,33 @@ describe('data-code-extension scan commands', () => {
     testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'test-scan-'));
     originalCwd = process.cwd();
     process.chdir(testDir);
+    setPipreqsMock(async () => 'pandas\nnumpy\n');
+
+    $$.SANDBOX.stub(PythonChecker, 'checkPython311').resolves({
+      command: 'python3',
+      version: '3.11.5',
+      major: 3,
+      minor: 11,
+      patch: 5,
+    });
+
+    $$.SANDBOX.stub(PipChecker, 'checkPackage').resolves({
+      name: 'salesforce-data-customcode',
+      version: '1.0.0',
+      location: '/usr/local/lib/python3.11/site-packages',
+      pipCommand: 'pip3',
+    });
+
+    $$.SANDBOX.stub(DatacodeBinaryChecker, 'checkBinary').resolves({
+      command: 'datacustomcode',
+      version: '1.0.0',
+      path: '/usr/local/bin/datacustomcode',
+    });
   });
 
   afterEach(() => {
     process.chdir(originalCwd);
+    setPipreqsMock(null);
     $$.restore();
     if (testDir && fs.existsSync(testDir)) {
       fs.rmSync(testDir, { recursive: true, force: true });
@@ -216,6 +243,8 @@ describe('data-code-extension scan commands', () => {
     });
 
     it('writes requirements.txt for function packages too', async () => {
+      setPipreqsMock(async () => 'pandas\n');
+
       makeFunctionPackage(
         'from datacustomcode.function import Runtime\n' +
           'import pandas\n' +

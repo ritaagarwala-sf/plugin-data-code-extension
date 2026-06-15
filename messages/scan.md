@@ -85,3 +85,27 @@ Skip updating the requirements.txt file.
 # flags.noRequirements.description
 
 When set, only scans for permissions and updates config.json, but doesn't update the requirements.txt file with discovered dependencies.
+
+# info.checkingPython
+
+Checking Python version...
+
+# info.pythonFound
+
+Python %s found at '%s'
+
+# info.checkingPackages
+
+Checking required Python packages...
+
+# info.packageFound
+
+Package '%s' version %s found
+
+# info.checkingBinary
+
+Checking datacustomcode binary...
+
+# info.binaryFound
+
+Datacustomcode binary version %s found
