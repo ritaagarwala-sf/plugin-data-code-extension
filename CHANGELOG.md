@@ -1,3 +1,12 @@
+## [1.3.1](https://github.com/salesforcecli/plugin-data-code-extension/compare/1.3.0...1.3.1) (2026-06-15)
+
+### Bug Fixes
+
+- exclude local modules from scan command ([c7edae2](https://github.com/salesforcecli/plugin-data-code-extension/commit/c7edae232fbf581c6113e2bc83fddaafdfc597bc))
+- fix unit tests for scan ([62b9a85](https://github.com/salesforcecli/plugin-data-code-extension/commit/62b9a8550f2370006498d705148912d2edf5ef21))
+- include directories and subdirectories for local module detection ([db04377](https://github.com/salesforcecli/plugin-data-code-extension/commit/db04377b8835154ffef574e6d98e98bd2adbbb3c))
+- updated impl to use pipreqs ([f1b53eb](https://github.com/salesforcecli/plugin-data-code-extension/commit/f1b53ebbe3b9e4983b09127376b37ca5c107d5af))
+
 # [1.3.0](https://github.com/salesforcecli/plugin-data-code-extension/compare/1.2.1...1.3.0) (2026-06-10)
 
 ### Bug Fixes
