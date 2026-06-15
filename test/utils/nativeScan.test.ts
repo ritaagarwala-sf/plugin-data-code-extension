@@ -18,6 +18,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { expect } from 'chai';
 import {
+  setPipreqsMock,
   executeNativeScan,
   findBaseDirectory,
   getPackageType,
@@ -234,7 +235,15 @@ describe('nativeScan: scanFile', () => {
 });
 
 describe('nativeScan: scanFileForImports', () => {
+  afterEach(() => {
+    setPipreqsMock(null);
+  });
+
   it('drops stdlib, datacustomcode, pyspark, and underscore-leading packages', async () => {
+    // pipreqs already filters out stdlib, local modules, and underscore-prefixed packages
+    // We only need to mock what pipreqs would actually return
+    setPipreqsMock(async () => 'pandas\nnumpy\n');
+
     const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'imports-'));
     const file = path.join(tmp, 'entrypoint.py');
     await fs.writeFile(
@@ -261,6 +270,8 @@ describe('nativeScan: scanFileForImports', () => {
   });
 
   it('handles multi-name import statements', async () => {
+    setPipreqsMock(async () => 'pandas\nnumpy\n');
+
     const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'imports-'));
     const file = path.join(tmp, 'entrypoint.py');
     await fs.writeFile(file, 'import pandas, numpy as np, os\n');
@@ -270,6 +281,8 @@ describe('nativeScan: scanFileForImports', () => {
   });
 
   it('filters out local modules that exist as .py files in the same directory', async () => {
+    setPipreqsMock(async () => 'pandas\nnumpy\n');
+
     const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'imports-'));
     const file = path.join(tmp, 'entrypoint.py');
     await fs.writeFile(path.join(tmp, 'helper.py'), '# local helper module\n');
@@ -283,6 +296,8 @@ describe('nativeScan: scanFileForImports', () => {
   });
 
   it('filters out local packages that exist as subdirectories', async () => {
+    setPipreqsMock(async () => 'pandas\nnumpy\n');
+
     const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'imports-'));
     const file = path.join(tmp, 'entrypoint.py');
     await fs.mkdir(path.join(tmp, 'utils'), { recursive: true });
@@ -295,6 +310,8 @@ describe('nativeScan: scanFileForImports', () => {
   });
 
   it('filters nested local packages by checking only top-level directory', async () => {
+    setPipreqsMock(async () => 'pandas\n');
+
     const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'imports-'));
     const file = path.join(tmp, 'entrypoint.py');
     // Create deeply nested local package structure
@@ -313,7 +330,13 @@ describe('nativeScan: scanFileForImports', () => {
 });
 
 describe('nativeScan: writeRequirementsFile', () => {
+  afterEach(() => {
+    setPipreqsMock(null);
+  });
+
   it('writes new requirements.txt in the parent of the entrypoint', async () => {
+    setPipreqsMock(async () => 'pandas\nnumpy\n');
+
     const dir = await makePackage({
       entrypoint: 'import pandas\nfrom numpy import array\nfrom datacustomcode.client import Client\n',
     });
@@ -327,6 +350,8 @@ describe('nativeScan: writeRequirementsFile', () => {
   });
 
   it('merges with existing requirements.txt and dedupes', async () => {
+    setPipreqsMock(async () => 'pandas\n');
+
     const dir = await makePackage({
       entrypoint: 'import pandas\nfrom datacustomcode.client import Client\n',
     });
@@ -548,7 +573,13 @@ describe('nativeScan: findBaseDirectory + getPackageType', () => {
 });
 
 describe('nativeScan: executeNativeScan', () => {
+  afterEach(() => {
+    setPipreqsMock(null);
+  });
+
   it('updates config.json and writes requirements.txt by default', async () => {
+    setPipreqsMock(async () => 'pandas\nnumpy\n');
+
     const dir = await makePackage({
       entrypoint:
         'import pandas\n' +
@@ -576,6 +607,8 @@ describe('nativeScan: executeNativeScan', () => {
   });
 
   it('does not modify any files in dry-run mode', async () => {
+    setPipreqsMock(async () => 'pandas\n');
+
     const dir = await makePackage({
       entrypoint:
         'import pandas\n' +
@@ -637,6 +670,8 @@ describe('nativeScan: executeNativeScan', () => {
   });
 
   it('resolves package type from .datacustomcode_proj when packageType is not passed', async () => {
+    setPipreqsMock(async () => '');
+
     // Function package. If executeNativeScan resolves type from sdk_config it will skip
     // the permission scan. If it incorrectly defaults to script it would either fill in
     // permissions (wrong) or throw InvalidEntrypoint when no read_*/write_to_* calls exist.
